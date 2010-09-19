@@ -1,0 +1,14 @@
+[Buildset]
+BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\x08\x00g\x00c\x00f\x00s)
+
+[CMake]
+BuildDirs=/root/workspace/skola/erasmus/project/git/gcfs/build
+CMakeDir=/usr/share/cmake/Modules
+Current CMake Binary=file:///usr/bin/cmake
+CurrentBuildDir=file:///root/workspace/skola/erasmus/project/git/gcfs/build
+CurrentBuildType=Debug
+CurrentInstallDir=file:///usr/local
+ProjectRootRelative=./
+
+[MakeBuilder]
+Number Of Jobs=1
