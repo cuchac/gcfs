@@ -18,9 +18,6 @@
 #include <unistd.h>
 #include <assert.h>
 
-static const char *gcfs_str = "Hello GCFS!\n";
-static const char *gcfs_name = "hello";
-
 static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 {
 	stbuf->st_ino = ino;
@@ -33,7 +30,7 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 	case 2:
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
-		stbuf->st_size = strlen(gcfs_str);
+		//stbuf->st_size = strlen(gcfs_str);
 		break;
 
 	default:
@@ -60,7 +57,7 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
 	struct fuse_entry_param e;
 
-	if (parent != 1 || strcmp(name, gcfs_name) != 0)
+	if (parent != FUSE_ROOT_ID /*|| strcmp(name, gcfs_name) != 0*/)
 		fuse_reply_err(req, ENOENT);
 	else {
 		memset(&e, 0, sizeof(e));
@@ -116,7 +113,7 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 		memset(&b, 0, sizeof(b));
 		dirbuf_add(req, &b, ".", 1);
 		dirbuf_add(req, &b, "..", 1);
-		dirbuf_add(req, &b, gcfs_name, 2);
+		//dirbuf_add(req, &b, gcfs_name, 2);
 		reply_buf_limited(req, b.p, b.size, off, size);
 		free(b.p);
 	}
@@ -139,19 +136,19 @@ static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 	(void) fi;
 
 	assert(ino == 2);
-	reply_buf_limited(req, gcfs_str, strlen(gcfs_str), off, size);
+	//reply_buf_limited(req, gcfs_str, strlen(gcfs_str), off, size);
 }
 
-static struct fuse_lowlevel_ops gcfs_oper = {
-	.lookup		= gcfs_lookup,
-	.getattr	= gcfs_getattr,
-	.readdir	= gcfs_readdir,
-	.open		= gcfs_open,
-	.read		= gcfs_read,
-};
+static struct fuse_lowlevel_ops gcfs_oper = {};
 
 int init_fuse(int argc, char *argv[])
 {
+	gcfs_oper.lookup	= gcfs_lookup;
+	gcfs_oper.getattr	= gcfs_getattr;
+	gcfs_oper.readdir	= gcfs_readdir;
+	gcfs_oper.open		= gcfs_open;
+	gcfs_oper.read		= gcfs_read;
+
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct fuse_chan *ch;
 	char *mountpoint;

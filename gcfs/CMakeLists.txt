@@ -15,5 +15,5 @@ include_directories(${FUSE_INCLUDE_DIRS})
 
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
-ADD_EXECUTABLE(gcfs src/fuse.c src/main.c)
+ADD_EXECUTABLE(gcfs src/gcfs_config.cpp src/gcfs_fuse.cpp src/gcfs.cpp src/gcfs_task_config.cpp)
 
