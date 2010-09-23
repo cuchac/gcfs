@@ -5,12 +5,21 @@
 #include <string.h>
 #include <gcfs_config.h>
 
-GCFS_TaskConfig::GCFS_TaskConfig(const char * sName): m_sName(m_sName),
+GCFS_TaskConfig::GCFS_TaskConfig(const char * sName): m_sName(sName),
 	m_iMemory("memory", "1024"),
 	m_iProcesses("processes", "1"),
 	m_iTimeout("timeout", "3600"),
 	m_iService("service", GCFS_SERVICE_BALANCED, g_sConfiguration.m_vServiceNames)
 {
+	m_vIndexToName.push_back(&m_iMemory);
+	m_vIndexToName.push_back(&m_iProcesses);
+	m_vIndexToName.push_back(&m_iTimeout);
+	m_vIndexToName.push_back(&m_iService);
+
+	m_mNameToIndex["memory"] = 1;
+	m_mNameToIndex["processes"] = 2;
+	m_mNameToIndex["timeout"] = 3;
+	m_mNameToIndex["service"] = 4;
 }
 
 

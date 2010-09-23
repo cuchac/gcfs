@@ -17,25 +17,38 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <assert.h>
+#include <gcfs.h>
+#include <gcfs_fuse.h>
+#include <gcfs_task_config.h>
 
 static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 {
 	stbuf->st_ino = ino;
-	switch (ino) {
-	case 1:
+	int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
+
+	if(ino > GCFS_FUSE_INODES_PER_TASK * g_vTasks.size())
+		return -1;
+	
+	if(ino == FUSE_ROOT_ID) {
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
-		break;
-
-	case 2:
+	}
+	else if(iIndex == GCFS_DIR_TASK || iIndex == GCFS_DIR_CONFIG) // Task dir
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink =2;
+	}
+	else if(iIndex >= GCFS_DIR_LAST)
+	{
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
-		//stbuf->st_size = strlen(gcfs_str);
-		break;
-
-	default:
+	}
+	else
+	{
+		printf("Error stat inode: %d\n", (int)ino);
 		return -1;
 	}
+
 	return 0;
 }
 
@@ -56,18 +69,37 @@ static void gcfs_getattr(fuse_req_t req, fuse_ino_t ino,
 static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
 	struct fuse_entry_param e;
+	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
+	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
 
-	if (parent != FUSE_ROOT_ID /*|| strcmp(name, gcfs_name) != 0*/)
-		fuse_reply_err(req, ENOENT);
-	else {
-		memset(&e, 0, sizeof(e));
-		e.ino = 2;
-		e.attr_timeout = 1.0;
-		e.entry_timeout = 1.0;
-		gcfs_stat(e.ino, &e.attr);
+	memset(&e, 0, sizeof(e));
 
-		fuse_reply_entry(req, &e);
+	if ((parent == FUSE_ROOT_ID) && (g_mTaskNames.find(name) != g_mTaskNames.end()))
+	{
+		e.ino = GCFS_DIRINODE(g_mTaskNames[name], GCFS_DIR_TASK);
 	}
+	else if(iParentIndex == GCFS_DIR_TASK && strcmp(name, "config")==0)
+	{
+		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG);
+	}
+	else if(iParentIndex == GCFS_DIR_TASK && strcmp(name, "control")==0)
+	{
+		e.ino = GCFS_CONTROLINODE(iTaskIndex, 0);
+	}
+	else if(iParentIndex == GCFS_DIR_CONFIG && g_vTasks[iTaskIndex].m_mNameToIndex.find(name) != g_vTasks[iTaskIndex].m_mNameToIndex.end()){
+		e.ino = GCFS_CONFIGINODE(iTaskIndex, g_vTasks[iTaskIndex].m_mNameToIndex[name]);
+	}
+	else
+	{
+		printf("Error lookup: %s, parent: %d\n", name, (int)parent);
+		fuse_reply_err(req, ENOENT);
+		return;
+	}
+
+	e.attr_timeout = 1.0;
+	e.entry_timeout = 1.0;
+	gcfs_stat(e.ino, &e.attr);
+	fuse_reply_entry(req, &e);
 }
 
 struct dirbuf {
@@ -104,30 +136,62 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 			     off_t off, struct fuse_file_info *fi)
 {
 	(void) fi;
+	int iParentIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
+	int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
 
-	if (ino != 1)
-		fuse_reply_err(req, ENOTDIR);
-	else {
+	if (ino == FUSE_ROOT_ID)
+	{
 		struct dirbuf b;
 
 		memset(&b, 0, sizeof(b));
 		dirbuf_add(req, &b, ".", 1);
 		dirbuf_add(req, &b, "..", 1);
-		//dirbuf_add(req, &b, gcfs_name, 2);
+		for(int iIndex = 0; iIndex < g_vTasks.size(); iIndex++)
+			dirbuf_add(req, &b, g_vTasks[iIndex].m_sName.c_str(), GCFS_DIRINODE(iIndex, GCFS_DIR_TASK));
+			
 		reply_buf_limited(req, b.p, b.size, off, size);
 		free(b.p);
 	}
+	else if(iParentIndex == GCFS_DIR_TASK){
+		struct dirbuf b;
+
+		memset(&b, 0, sizeof(b));
+		dirbuf_add(req, &b, ".", ino);
+		dirbuf_add(req, &b, "..", FUSE_ROOT_ID);
+		dirbuf_add(req, &b, "config", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
+		dirbuf_add(req, &b, "control", GCFS_CONFIGINODE(iTaskIndex, 0));
+		reply_buf_limited(req, b.p, b.size, off, size);
+		free(b.p);
+	}
+	else if(iParentIndex == GCFS_DIR_CONFIG){
+		struct dirbuf b;
+
+		memset(&b, 0, sizeof(b));
+		dirbuf_add(req, &b, ".", ino);
+		dirbuf_add(req, &b, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
+		for(int iIndex = 0; iIndex < g_vTasks[iTaskIndex].m_vIndexToName.size(); iIndex++)
+			dirbuf_add(req, &b, g_vTasks[iTaskIndex].m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
+		reply_buf_limited(req, b.p, b.size, off, size);
+		free(b.p);
+	}
+	else
+		fuse_reply_err(req, ENOTDIR);
 }
 
 static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
 			  struct fuse_file_info *fi)
 {
-	if (ino != 2)
+	int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
+	int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
+	
+	if (iIndex < GCFS_DIR_LAST)
 		fuse_reply_err(req, EISDIR);
 	else if ((fi->flags & 3) != O_RDONLY)
 		fuse_reply_err(req, EACCES);
-	else
+	else if(iIndex < GCFS_CONFIGINODE(0,0))
+	{
 		fuse_reply_open(req, fi);
+	}
 }
 
 static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,

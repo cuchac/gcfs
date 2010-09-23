@@ -8,7 +8,7 @@
 #include <map>
 
 // Configuration options
-#define GCFS_CONFIGS C(memory), C(processes), C(timeout), C(service)
+#define GCFS_TASK_CONFIGS 4
 
 // Task Configuration
 class GCFS_TaskConfig {
@@ -16,7 +16,7 @@ class GCFS_TaskConfig {
 public:
 							GCFS_TaskConfig(const char * sName);
 
-private:
+public:
 	std::string			m_sName;
 
 public:
@@ -81,8 +81,8 @@ public:
 	ConfigChoice								m_iService;
 
 
-	std::vector<ConfigValue*>				m_vIndexToValue;
-	std::map<const char *, int> 			m_mNameToIndex;
+	std::vector<ConfigValue*>				m_vIndexToName;
+	std::map<std::string, int> 			m_mNameToIndex;
 
 };
 

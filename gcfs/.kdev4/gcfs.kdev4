@@ -10,5 +10,31 @@ CurrentBuildType=Debug
 CurrentInstallDir=file:///usr/local
 ProjectRootRelative=./
 
+[Launch]
+Launch Configurations=Launch Configuration 0
+
+[Launch][Launch Configuration 0]
+Configured Launch Modes=execute
+Configured Launchers=nativeAppLauncher
+Name=New Native Application Configuration
+Type=Native Application
+
+[Launch][Launch Configuration 0][Data]
+Arguments=test/
+Debugger Shell=
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
+Dependency Action=Nothing
+Display Demangle Names=true
+Display Static Members=false
+EnvironmentGroup=default
+Executable=file:///root/workspace/skola/erasmus/project/git/gcfs/build/gcfs
+GDB Path=
+Remote GDB Config Script=
+Remote GDB Run Script=
+Remote GDB Shell Script=
+Try Setting Breakpoints On Loading Libraries=true
+Working Directory=file:///root/workspace/skola/erasmus/project/git/gcfs/build/
+isExecutable=true
+
 [MakeBuilder]
 Number Of Jobs=1
