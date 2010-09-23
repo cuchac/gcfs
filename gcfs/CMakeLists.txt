@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 
 PROJECT(gcfs)
 
 include_directories(include)
 
 INCLUDE(FindPkgConfig)
-cmake_policy(SET CMP0015 NEW)
 
 pkg_check_modules(FUSE REQUIRED fuse)
 
