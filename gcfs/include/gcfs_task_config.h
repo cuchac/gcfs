@@ -20,6 +20,8 @@ public:
 public:
 	std::string			m_sName;
 
+	bool					m_bCompleted;
+
 public:
 	// Task Configuration Values
 	class ConfigValue

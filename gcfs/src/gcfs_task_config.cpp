@@ -43,7 +43,8 @@ GCFS_TaskConfig::GCFS_TaskConfig(const char * sName): m_sName(sName),
 	m_iMemory("memory", "1024"),
 	m_iProcesses("processes", "1"),
 	m_iTimeout("timeout", "3600"),
-	m_iService("service", GCFS_SERVICE_BALANCED, g_sConfiguration.m_vServiceNames)
+	m_iService("service", GCFS_SERVICE_BALANCED, g_sConfiguration.m_vServiceNames),
+	m_bCompleted(false)
 {
 	m_vIndexToName.push_back(&m_iMemory);
 	m_vIndexToName.push_back(&m_iProcesses);
@@ -60,7 +61,8 @@ GCFS_TaskConfig::GCFS_TaskConfig(const GCFS_TaskConfig & sCopy): m_sName(sCopy.m
 	m_iMemory(sCopy.m_iMemory),
 	m_iProcesses(sCopy.m_iProcesses),
 	m_iTimeout(sCopy.m_iTimeout),
-	m_iService(sCopy.m_iService)
+	m_iService(sCopy.m_iService),
+	m_bCompleted(sCopy.m_bCompleted)
 {
 	m_vIndexToName.push_back(&m_iMemory);
 	m_vIndexToName.push_back(&m_iProcesses);

@@ -33,7 +33,7 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 	}
-	else if(iIndex == GCFS_DIR_TASK || iIndex == GCFS_DIR_CONFIG) // Task dir
+	else if(iIndex < GCFS_DIR_LAST) // Task dir
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink =2;
@@ -82,6 +82,14 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG);
 	}
+	else if(iParentIndex == GCFS_DIR_TASK && strcmp(name, "data")==0)
+	{
+		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_DATA);
+	}
+	else if(iParentIndex == GCFS_DIR_TASK && g_sTasks.Get(iTaskIndex)->m_bCompleted && strcmp(name, "result")==0)
+	{
+		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_RESULT);
+	}
 	else if(iParentIndex == GCFS_DIR_TASK && strcmp(name, "control")==0)
 	{
 		e.ino = GCFS_CONTROLINODE(iTaskIndex, 0);
@@ -110,6 +118,7 @@ struct dirbuf {
 static void dirbuf_add(fuse_req_t req, struct dirbuf *b, const char *name,
 		       fuse_ino_t ino)
 {
+//TODO: Replace dirbuf with std::string and get rid of realloc
 	struct stat stbuf;
 	size_t oldsize = b->size;
 	b->size += fuse_add_direntry(req, NULL, 0, name, NULL, 0);
@@ -139,43 +148,59 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 	int iParentIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
 	int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
 
+	struct dirbuf b;
+	memset(&b, 0, sizeof(b));
+	dirbuf_add(req, &b, ".", ino);
+	
 	if (ino == FUSE_ROOT_ID)
 	{
-		struct dirbuf b;
-
-		memset(&b, 0, sizeof(b));
-		dirbuf_add(req, &b, ".", 1);
-		dirbuf_add(req, &b, "..", 1);
 		for(int iIndex = 0; iIndex < g_sTasks.GetCount(); iIndex++)
 			dirbuf_add(req, &b, g_sTasks.Get(iIndex)->m_sName.c_str(), GCFS_DIRINODE(iIndex, GCFS_DIR_TASK));
-			
-		reply_buf_limited(req, b.p, b.size, off, size);
-		free(b.p);
 	}
-	else if(iParentIndex == GCFS_DIR_TASK){
-		struct dirbuf b;
+	else switch(iParentIndex)
+	{
+		case GCFS_DIR_TASK:
+		{
+			dirbuf_add(req, &b, "..", FUSE_ROOT_ID);
+			dirbuf_add(req, &b, "config", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
+			dirbuf_add(req, &b, "data", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
+			if(g_sTasks.Get(iTaskIndex)->m_bCompleted)
+				dirbuf_add(req, &b, "result", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
+			dirbuf_add(req, &b, "control", GCFS_CONFIGINODE(iTaskIndex, 0));
+			break;
+		}
+		
+		case GCFS_DIR_CONFIG:
+		{
+			dirbuf_add(req, &b, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
+			for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
+				dirbuf_add(req, &b, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
+			break;
+		}
 
-		memset(&b, 0, sizeof(b));
-		dirbuf_add(req, &b, ".", ino);
-		dirbuf_add(req, &b, "..", FUSE_ROOT_ID);
-		dirbuf_add(req, &b, "config", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
-		dirbuf_add(req, &b, "control", GCFS_CONFIGINODE(iTaskIndex, 0));
-		reply_buf_limited(req, b.p, b.size, off, size);
-		free(b.p);
-	}
-	else if(iParentIndex == GCFS_DIR_CONFIG){
-		struct dirbuf b;
+		case GCFS_DIR_DATA:
+		{
+			dirbuf_add(req, &b, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
+			/*for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
+				dirbuf_add(req, &b, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));*/
+			break;
+		}
 
-		memset(&b, 0, sizeof(b));
-		dirbuf_add(req, &b, ".", ino);
-		dirbuf_add(req, &b, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
-		for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
-			dirbuf_add(req, &b, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
-		reply_buf_limited(req, b.p, b.size, off, size);
-		free(b.p);
+		case GCFS_DIR_RESULT:
+		{
+			dirbuf_add(req, &b, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
+			/*for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
+				dirbuf_add(req, &b, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));*/
+			break;
+		}
+		
+		default:
+			fuse_reply_err(req, ENOTDIR);
+			return;
 	}
-	else
-		fuse_reply_err(req, ENOTDIR);
+	
+	reply_buf_limited(req, b.p, b.size, off, size);
+	free(b.p);
 }
 
 static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
