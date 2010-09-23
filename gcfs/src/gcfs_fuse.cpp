@@ -26,7 +26,7 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 	stbuf->st_ino = ino;
 	int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
 
-	if(ino > GCFS_FUSE_INODES_PER_TASK * g_vTasks.size())
+	if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTasks.GetCount())
 		return -1;
 	
 	if(ino == FUSE_ROOT_ID) {
@@ -74,9 +74,9 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 
 	memset(&e, 0, sizeof(e));
 
-	if ((parent == FUSE_ROOT_ID) && (g_mTaskNames.find(name) != g_mTaskNames.end()))
+	if ((parent == FUSE_ROOT_ID) && (g_sTasks.Get(name) != NULL))
 	{
-		e.ino = GCFS_DIRINODE(g_mTaskNames[name], GCFS_DIR_TASK);
+		e.ino = GCFS_DIRINODE(g_sTasks.GetIndex(name), GCFS_DIR_TASK);
 	}
 	else if(iParentIndex == GCFS_DIR_TASK && strcmp(name, "config")==0)
 	{
@@ -86,8 +86,8 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_CONTROLINODE(iTaskIndex, 0);
 	}
-	else if(iParentIndex == GCFS_DIR_CONFIG && g_vTasks[iTaskIndex].m_mNameToIndex.find(name) != g_vTasks[iTaskIndex].m_mNameToIndex.end()){
-		e.ino = GCFS_CONFIGINODE(iTaskIndex, g_vTasks[iTaskIndex].m_mNameToIndex[name]);
+	else if(iParentIndex == GCFS_DIR_CONFIG && g_sTasks.Get(iTaskIndex)->m_mNameToIndex.find(name) != g_sTasks.Get(iTaskIndex)->m_mNameToIndex.end()){
+		e.ino = GCFS_CONFIGINODE(iTaskIndex, g_sTasks.Get(iTaskIndex)->m_mNameToIndex[name]);
 	}
 	else
 	{
@@ -146,8 +146,8 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 		memset(&b, 0, sizeof(b));
 		dirbuf_add(req, &b, ".", 1);
 		dirbuf_add(req, &b, "..", 1);
-		for(int iIndex = 0; iIndex < g_vTasks.size(); iIndex++)
-			dirbuf_add(req, &b, g_vTasks[iIndex].m_sName.c_str(), GCFS_DIRINODE(iIndex, GCFS_DIR_TASK));
+		for(int iIndex = 0; iIndex < g_sTasks.GetCount(); iIndex++)
+			dirbuf_add(req, &b, g_sTasks.Get(iIndex)->m_sName.c_str(), GCFS_DIRINODE(iIndex, GCFS_DIR_TASK));
 			
 		reply_buf_limited(req, b.p, b.size, off, size);
 		free(b.p);
@@ -169,8 +169,8 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 		memset(&b, 0, sizeof(b));
 		dirbuf_add(req, &b, ".", ino);
 		dirbuf_add(req, &b, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
-		for(int iIndex = 0; iIndex < g_vTasks[iTaskIndex].m_vIndexToName.size(); iIndex++)
-			dirbuf_add(req, &b, g_vTasks[iTaskIndex].m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
+		for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
+			dirbuf_add(req, &b, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
 		reply_buf_limited(req, b.p, b.size, off, size);
 		free(b.p);
 	}

@@ -15,6 +15,7 @@ class GCFS_TaskConfig {
 
 public:
 							GCFS_TaskConfig(const char * sName);
+							GCFS_TaskConfig(const GCFS_TaskConfig & sCopy);
 
 public:
 	std::string			m_sName;
@@ -24,20 +25,19 @@ public:
 	class ConfigValue
 	{
 	public:
-							ConfigValue(const char *sName, const char *sDefault);
+							ConfigValue(const char *sName):m_sName(sName){};
 
 		virtual	bool	SetValue(const char * sValue) = 0;
 		virtual	bool	PrintValue(char * sBuffer, int iBufSize) = 0;
 
 	public:
 		const char * 	m_sName;
-		const char * 	m_sDefault;
 	};
 
 	class ConfigInt: public ConfigValue
 	{
 	public:
-							ConfigInt(const char *sName, const char *sDefault):ConfigValue(sName, sDefault){};
+							ConfigInt(const char *sName, const char *sDefault):ConfigValue(sName){this->SetValue(sDefault);};
 
 		bool				SetValue(const char * sValue);
 		bool				PrintValue(char * sBuffer, int iBufSize);
@@ -49,7 +49,7 @@ public:
 	class ConfigString: public ConfigValue
 	{
 	public:
-							ConfigString(const char *sName, const char *sDefault):ConfigValue(sName, sDefault){};
+							ConfigString(const char *sName, const char *sDefault):ConfigValue(sName){this->SetValue(sDefault);};
 							~ConfigString();
 
 		bool				SetValue(const char * sValue);
@@ -63,7 +63,7 @@ public:
 	{
 		typedef std::vector<std::string> choices_t;
 	public:
-							ConfigChoice(const char *sName, const char *sDefault, choices_t & vChoices):ConfigValue(sName, sDefault),m_vChoices(vChoices){};
+							ConfigChoice(const char *sName, const char *sDefault, choices_t & vChoices):ConfigValue(sName),m_vChoices(vChoices){this->SetValue(sDefault);};
 
 		bool				SetValue(const char * sValue);
 		bool				PrintValue(char * sBuffer, int iBufSize);
@@ -84,6 +84,23 @@ public:
 	std::vector<ConfigValue*>				m_vIndexToName;
 	std::map<std::string, int> 			m_mNameToIndex;
 
+};
+
+class GCFS_Tasks {
+public:
+
+	bool					AddTask(const char * sName);
+
+	size_t				GetCount();
+
+	GCFS_TaskConfig*	Get(int iIndex);
+	GCFS_TaskConfig*	Get(const char * sName);
+	int					GetIndex(const char * sName);
+
+private:
+
+	std::vector<GCFS_TaskConfig> 	m_vTasks;
+	std::map<std::string, int> 	m_mTaskNames;
 };
 
 #endif /*__GCFS_TASK_CONFIG__*/

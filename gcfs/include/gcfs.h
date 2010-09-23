@@ -5,15 +5,14 @@
 #include <vector>
 #include <string>
 
-class GCFS_TaskConfig;
+class GCFS_Tasks;
 class GCFS_Config;
 
 // Configuration
 extern GCFS_Config g_sConfiguration;
 
 // Tasks
-extern std::vector<GCFS_TaskConfig> g_vTasks;
-extern std::map<std::string, int> g_mTaskNames;
+extern GCFS_Tasks g_sTasks;
 
 #define GCFS_SERVICE_BALANCED "-Balanced-"
 
