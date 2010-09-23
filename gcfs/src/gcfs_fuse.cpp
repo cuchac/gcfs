@@ -203,6 +203,31 @@ static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 	//reply_buf_limited(req, gcfs_str, strlen(gcfs_str), off, size);
 }
 
+static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
+		       mode_t mode)
+{
+	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
+	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+
+	if(parent == FUSE_ROOT_ID)
+	{
+		struct fuse_entry_param e;
+
+		memset(&e, 0, sizeof(e));
+
+		g_sTasks.AddTask(name);
+		e.ino = GCFS_DIRINODE(g_sTasks.GetCount()-1, GCFS_DIR_TASK);
+		e.attr_timeout = 1.0;
+		e.entry_timeout = 1.0;
+		gcfs_stat(e.ino, &e.attr);
+	
+		fuse_reply_entry(req, &e);
+		return;
+	}
+
+	fuse_reply_err(req, -EACCES);
+}
+
 static struct fuse_lowlevel_ops gcfs_oper = {};
 
 int init_fuse(int argc, char *argv[])
@@ -212,6 +237,7 @@ int init_fuse(int argc, char *argv[])
 	gcfs_oper.readdir	= gcfs_readdir;
 	gcfs_oper.open		= gcfs_open;
 	gcfs_oper.read		= gcfs_read;
+	gcfs_oper.mkdir	= gcfs_mkdir;
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct fuse_chan *ch;
