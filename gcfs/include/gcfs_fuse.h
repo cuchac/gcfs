@@ -14,6 +14,9 @@
 #define GCFS_CONFIGINODE(task, index)		(GCFS_DIRINODE(task, GCFS_DIR_LAST) + GCFS_FUSE_INODES_CONTROLS + index)
 #define GCFS_CONTROLINODE(task, index)		(GCFS_DIRINODE(task, GCFS_DIR_LAST) + index)
 
+#define GCFS_IS_DIRINODE(index)				(index >= 0 && index < GCFS_DIR_LAST)
+#define GCFS_IS_CONFIGINODE(index)			(index >= (GCFS_DIR_LAST + GCFS_FUSE_INODES_CONTROLS) && index < GCFS_FUSE_INODES_PER_TASK)
+#define GCFS_IS_CONTROLINODE(index)			(index >= GCFS_DIR_LAST && index < G(CFS_DIR_LAST + GCFS_FUSE_INODES_CONTROLS))
 
 int init_fuse(int argc, char *argv[]);
 

@@ -79,9 +79,11 @@ bool GCFS_TaskConfig::ConfigInt::SetValue(const char * sValue)
 	return true;
 }
 
-bool GCFS_TaskConfig::ConfigInt::PrintValue(char * sBuffer, int iBufSize)
+bool GCFS_TaskConfig::ConfigInt::PrintValue(std::string& buff)
 {
-	snprintf(sBuffer, iBufSize, "%d", m_iValue);
+	size_t size = snprintf(NULL, 0, "%d", m_iValue);
+	buff.resize(size+1);
+	snprintf((char*)buff.c_str(), size+1, "%d", m_iValue);
 	
 	return true;
 }
@@ -94,9 +96,9 @@ bool GCFS_TaskConfig::ConfigString::SetValue(const char * sValue)
 	return true;
 }
 
-bool GCFS_TaskConfig::ConfigString::PrintValue(char * sBuffer, int iBufSize)
+bool GCFS_TaskConfig::ConfigString::PrintValue(std::string& buff)
 {
-	snprintf(sBuffer, iBufSize, "%s", m_sValue.c_str());
+	buff = m_sValue;
 
 	return true;
 }
@@ -117,20 +119,20 @@ bool GCFS_TaskConfig::ConfigChoice::SetValue(const char * sValue)
 	return true;
 }
 
-bool GCFS_TaskConfig::ConfigChoice::PrintValue(char * sBuffer, int iBufSize)
+bool GCFS_TaskConfig::ConfigChoice::PrintValue(std::string& buff)
 {
 	for(int iIndex = 0; iIndex < m_vChoices.size(); iIndex ++)
 	{
 		if(iIndex > 0)
-			strncat(sBuffer, ", ", iBufSize);
+			buff += ", ";
 		
 		if(iIndex == m_iValue)
-			strncat(sBuffer, "[", iBufSize);
+			buff +=  "[";
 			
-		strncat(sBuffer, m_vChoices[iIndex].c_str(), iBufSize);
+		buff += m_vChoices[iIndex];
 
 		if(iIndex == m_iValue)
-			strncat(sBuffer, "]", iBufSize);
+			buff +=  "]";
 	}
 
 	return true;

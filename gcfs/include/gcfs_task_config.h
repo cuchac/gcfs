@@ -8,7 +8,7 @@
 #include <map>
 
 // Configuration options
-#define GCFS_TASK_CONFIGS 4
+#define GCFS_TASK_CONFIGS 				4
 
 // Task Configuration
 class GCFS_TaskConfig {
@@ -30,7 +30,7 @@ public:
 							ConfigValue(const char *sName):m_sName(sName){};
 
 		virtual	bool	SetValue(const char * sValue) = 0;
-		virtual	bool	PrintValue(char * sBuffer, int iBufSize) = 0;
+		virtual	bool	PrintValue(std::string &buff) = 0;
 
 	public:
 		const char * 	m_sName;
@@ -42,7 +42,7 @@ public:
 							ConfigInt(const char *sName, const char *sDefault):ConfigValue(sName){this->SetValue(sDefault);};
 
 		bool				SetValue(const char * sValue);
-		bool				PrintValue(char * sBuffer, int iBufSize);
+		bool				PrintValue(std::string &buff);
 
 	public:
 		int				m_iValue;
@@ -55,7 +55,7 @@ public:
 							~ConfigString();
 
 		bool				SetValue(const char * sValue);
-		bool				PrintValue(char * sBuffer, int iBufSize);
+		bool				PrintValue(std::string &buff);
 
 	public:
 		std::string		m_sValue;
@@ -68,7 +68,7 @@ public:
 							ConfigChoice(const char *sName, const char *sDefault, choices_t & vChoices):ConfigValue(sName),m_vChoices(vChoices){this->SetValue(sDefault);};
 
 		bool				SetValue(const char * sValue);
-		bool				PrintValue(char * sBuffer, int iBufSize);
+		bool				PrintValue(std::string &buff);
 
 	public:
 		int				m_iValue;
