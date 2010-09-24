@@ -55,11 +55,10 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 static void gcfs_getattr(fuse_req_t req, fuse_ino_t ino,
 			     struct fuse_file_info *fi)
 {
-	struct stat stbuf;
+	struct stat stbuf = {0};
 
 	(void) fi;
 
-	memset(&stbuf, 0, sizeof(stbuf));
 	if (gcfs_stat(ino, &stbuf) == -1)
 		fuse_reply_err(req, ENOENT);
 	else
@@ -68,11 +67,9 @@ static void gcfs_getattr(fuse_req_t req, fuse_ino_t ino,
 
 static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-	struct fuse_entry_param e;
+	struct fuse_entry_param e = {0};
 	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
 	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
-
-	memset(&e, 0, sizeof(e));
 
 	if ((parent == FUSE_ROOT_ID) && (g_sTasks.Get(name) != NULL))
 	{
@@ -110,33 +107,28 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	fuse_reply_entry(req, &e);
 }
 
-struct dirbuf {
-	char *p;
-	size_t size;
-};
-
-static void dirbuf_add(fuse_req_t req, struct dirbuf *b, const char *name,
+static void dirbuf_add(fuse_req_t req, std::string &buff , const char *name,
 		       fuse_ino_t ino)
 {
-//TODO: Replace dirbuf with std::string and get rid of realloc
-	struct stat stbuf;
-	size_t oldsize = b->size;
-	b->size += fuse_add_direntry(req, NULL, 0, name, NULL, 0);
-	b->p = (char *) realloc(b->p, b->size);
-	memset(&stbuf, 0, sizeof(stbuf));
+	struct stat stbuf = {0};
+
 	stbuf.st_ino = ino;
-	fuse_add_direntry(req, b->p + oldsize, b->size - oldsize, name, &stbuf,
-			  b->size);
+
+	size_t bufSize = buff.size();
+
+	size_t size = fuse_add_direntry(req, NULL, 0, name, NULL, 0);
+	buff.resize(bufSize+size);
+	fuse_add_direntry(req, (char*)buff.c_str() + bufSize, size, name, &stbuf, bufSize+size);
+
 }
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
 
-static int reply_buf_limited(fuse_req_t req, const char *buf, size_t bufsize,
-			     off_t off, size_t maxsize)
+static int reply_buf_limited(fuse_req_t req, std::string &buff, off_t off, size_t maxsize)
 {
-	if (off < bufsize)
-		return fuse_reply_buf(req, buf + off,
-				      min(bufsize - off, maxsize));
+	if (off < buff.size())
+		return fuse_reply_buf(req, buff.c_str() + off,
+				      min(buff.size() - off, maxsize));
 	else
 		return fuse_reply_buf(req, NULL, 0);
 }
@@ -148,39 +140,38 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 	int iParentIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
 	int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
 
-	struct dirbuf b;
-	memset(&b, 0, sizeof(b));
-	dirbuf_add(req, &b, ".", ino);
+	std::string buff;
+	dirbuf_add(req, buff, ".", ino);
 	
 	if (ino == FUSE_ROOT_ID)
 	{
 		for(int iIndex = 0; iIndex < g_sTasks.GetCount(); iIndex++)
-			dirbuf_add(req, &b, g_sTasks.Get(iIndex)->m_sName.c_str(), GCFS_DIRINODE(iIndex, GCFS_DIR_TASK));
+			dirbuf_add(req, buff, g_sTasks.Get(iIndex)->m_sName.c_str(), GCFS_DIRINODE(iIndex, GCFS_DIR_TASK));
 	}
 	else switch(iParentIndex)
 	{
 		case GCFS_DIR_TASK:
 		{
-			dirbuf_add(req, &b, "..", FUSE_ROOT_ID);
-			dirbuf_add(req, &b, "config", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
-			dirbuf_add(req, &b, "data", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
+			dirbuf_add(req, buff, "..", FUSE_ROOT_ID);
+			dirbuf_add(req, buff, "config", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
+			dirbuf_add(req, buff, "data", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
 			if(g_sTasks.Get(iTaskIndex)->m_bCompleted)
-				dirbuf_add(req, &b, "result", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
-			dirbuf_add(req, &b, "control", GCFS_CONFIGINODE(iTaskIndex, 0));
+				dirbuf_add(req, buff, "result", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
+			dirbuf_add(req, buff, "control", GCFS_CONFIGINODE(iTaskIndex, 0));
 			break;
 		}
 		
 		case GCFS_DIR_CONFIG:
 		{
-			dirbuf_add(req, &b, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
+			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
 			for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
-				dirbuf_add(req, &b, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
+				dirbuf_add(req, buff, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
 			break;
 		}
 
 		case GCFS_DIR_DATA:
 		{
-			dirbuf_add(req, &b, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
+			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
 			/*for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
 				dirbuf_add(req, &b, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));*/
 			break;
@@ -188,7 +179,7 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 
 		case GCFS_DIR_RESULT:
 		{
-			dirbuf_add(req, &b, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
+			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
 			/*for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
 				dirbuf_add(req, &b, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));*/
 			break;
@@ -199,8 +190,7 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 			return;
 	}
 	
-	reply_buf_limited(req, b.p, b.size, off, size);
-	free(b.p);
+	reply_buf_limited(req, buff, off, size);
 }
 
 static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
@@ -236,9 +226,7 @@ static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 
 	if(parent == FUSE_ROOT_ID)
 	{
-		struct fuse_entry_param e;
-
-		memset(&e, 0, sizeof(e));
+		struct fuse_entry_param e = {0};
 
 		g_sTasks.AddTask(name);
 		e.ino = GCFS_DIRINODE(g_sTasks.GetCount()-1, GCFS_DIR_TASK);
