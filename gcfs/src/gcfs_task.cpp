@@ -19,47 +19,43 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_mNameToIndex["service"] = 3;
 }
 
-GCFS_Task::GCFS_Task(const GCFS_Task & sCopy): m_sName(sCopy.m_sName),
-	m_iMemory(sCopy.m_iMemory),
-	m_iProcesses(sCopy.m_iProcesses),
-	m_iTimeout(sCopy.m_iTimeout),
-	m_iService(sCopy.m_iService),
-	m_bCompleted(sCopy.m_bCompleted)
+bool GCFS_TaskManager::AddTask(const char * sName)
 {
-	m_vIndexToName.push_back(&m_iMemory);
-	m_vIndexToName.push_back(&m_iProcesses);
-	m_vIndexToName.push_back(&m_iTimeout);
-	m_vIndexToName.push_back(&m_iService);
-
-	m_mNameToIndex = sCopy.m_mNameToIndex;
-}
-
-bool GCFS_Tasks::AddTask(const char * sName)
-{
-	m_vTasks.push_back(sName);
+	m_vTasks.push_back(new GCFS_Task(sName));
 	m_mTaskNames[sName] = m_vTasks.size()-1;
 }
 
-size_t GCFS_Tasks::GetCount()
+bool GCFS_TaskManager::DeleteTask(const char * sName)
+{
+	int iIndex = -1;
+	if((iIndex = GetTaskIndex(sName)) >= 0)
+	{
+		delete m_vTasks[iIndex];
+		m_vTasks.erase(m_vTasks.begin()+iIndex);
+		m_mTaskNames.erase(sName);
+	}
+}
+
+size_t GCFS_TaskManager::GetTaskCount()
 {
 	return (int)m_vTasks.size();
 }
 
-GCFS_Task* GCFS_Tasks::Get(int iIndex)
+GCFS_Task* GCFS_TaskManager::GetTask(int iIndex)
 {
-	return &m_vTasks[iIndex];
+	return m_vTasks[iIndex];
 }
 
-GCFS_Task* GCFS_Tasks::Get(const char * sName)
+GCFS_Task* GCFS_TaskManager::GetTask(const char * sName)
 {
 	std::map<std::string, int>::iterator it;
 	if((it = m_mTaskNames.find(sName)) != m_mTaskNames.end())
-		return &m_vTasks[it->second];
+		return m_vTasks[it->second];
 	else
 		return NULL;
 }
 
-int GCFS_Tasks::GetIndex(const char * sName)
+int GCFS_TaskManager::GetTaskIndex(const char * sName)
 {
 	std::map<std::string, int>::iterator it;
 	if((it = m_mTaskNames.find(sName)) != m_mTaskNames.end())

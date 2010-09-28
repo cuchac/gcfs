@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 GCFS_Config g_sConfig;
-GCFS_Tasks g_sTasks;
+GCFS_TaskManager g_sTasks;
 
 int main(int argc, char *argv[]){
 

@@ -26,7 +26,7 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 	stbuf->st_ino = ino;
 	int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
 
-	if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTasks.GetCount())
+	if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTasks.GetTaskCount())
 		return -1;
 	
 	if(ino == FUSE_ROOT_ID) {
@@ -84,9 +84,9 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
 	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
 
-	if ((parent == FUSE_ROOT_ID) && (g_sTasks.Get(name) != NULL))
+	if ((parent == FUSE_ROOT_ID) && (g_sTasks.GetTask(name) != NULL))
 	{
-		e.ino = GCFS_DIRINODE(g_sTasks.GetIndex(name), GCFS_DIR_TASK);
+		e.ino = GCFS_DIRINODE(g_sTasks.GetTaskIndex(name), GCFS_DIR_TASK);
 	}
 	else if(iParentIndex == GCFS_DIR_TASK && strcmp(name, "config")==0)
 	{
@@ -96,7 +96,7 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_DATA);
 	}
-	else if(iParentIndex == GCFS_DIR_TASK && g_sTasks.Get(iTaskIndex)->m_bCompleted && strcmp(name, "result")==0)
+	else if(iParentIndex == GCFS_DIR_TASK && g_sTasks.GetTask(iTaskIndex)->m_bCompleted && strcmp(name, "result")==0)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_RESULT);
 	}
@@ -104,8 +104,8 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_CONTROLINODE(iTaskIndex, 0);
 	}
-	else if(iParentIndex == GCFS_DIR_CONFIG && g_sTasks.Get(iTaskIndex)->m_mNameToIndex.find(name) != g_sTasks.Get(iTaskIndex)->m_mNameToIndex.end()){
-		e.ino = GCFS_CONFIGINODE(iTaskIndex, g_sTasks.Get(iTaskIndex)->m_mNameToIndex[name]);
+	else if(iParentIndex == GCFS_DIR_CONFIG && g_sTasks.GetTask(iTaskIndex)->m_mNameToIndex.find(name) != g_sTasks.GetTask(iTaskIndex)->m_mNameToIndex.end()){
+		e.ino = GCFS_CONFIGINODE(iTaskIndex, g_sTasks.GetTask(iTaskIndex)->m_mNameToIndex[name]);
 	}
 	else
 	{
@@ -158,8 +158,8 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 	
 	if (ino == FUSE_ROOT_ID)
 	{
-		for(int iIndex = 0; iIndex < g_sTasks.GetCount(); iIndex++)
-			dirbuf_add(req, buff, g_sTasks.Get(iIndex)->m_sName.c_str(), GCFS_DIRINODE(iIndex, GCFS_DIR_TASK));
+		for(int iIndex = 0; iIndex < g_sTasks.GetTaskCount(); iIndex++)
+			dirbuf_add(req, buff, g_sTasks.GetTask(iIndex)->m_sName.c_str(), GCFS_DIRINODE(iIndex, GCFS_DIR_TASK));
 	}
 	else switch(iParentIndex)
 	{
@@ -168,7 +168,7 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 			dirbuf_add(req, buff, "..", FUSE_ROOT_ID);
 			dirbuf_add(req, buff, "config", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
 			dirbuf_add(req, buff, "data", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
-			if(g_sTasks.Get(iTaskIndex)->m_bCompleted)
+			if(g_sTasks.GetTask(iTaskIndex)->m_bCompleted)
 				dirbuf_add(req, buff, "result", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
 			dirbuf_add(req, buff, "control", GCFS_CONFIGINODE(iTaskIndex, 0));
 			break;
@@ -177,8 +177,8 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 		case GCFS_DIR_CONFIG:
 		{
 			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
-			for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
-				dirbuf_add(req, buff, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
+			for(int iIndex = 0; iIndex < g_sTasks.GetTask(iTaskIndex)->m_vIndexToName.size(); iIndex++)
+				dirbuf_add(req, buff, g_sTasks.GetTask(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
 			break;
 		}
 
@@ -223,7 +223,7 @@ static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
 	else if(GCFS_IS_CONFIGINODE(iIndex))
 	{
 		int iConfigIndex = ino - GCFS_CONFIGINODE(iTaskIndex, 0);
-		fi->fh = (uint64_t)g_sTasks.Get(iTaskIndex)->m_vIndexToName[iConfigIndex];
+		fi->fh = (uint64_t)g_sTasks.GetTask(iTaskIndex)->m_vIndexToName[iConfigIndex];
 		
 		fuse_reply_open(req, fi);
 	}
@@ -293,7 +293,7 @@ static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 		struct fuse_entry_param e = {0};
 
 		g_sTasks.AddTask(name);
-		e.ino = GCFS_DIRINODE(g_sTasks.GetCount()-1, GCFS_DIR_TASK);
+		e.ino = GCFS_DIRINODE(g_sTasks.GetTaskCount()-1, GCFS_DIR_TASK);
 		e.attr_timeout = 1.0;
 		e.entry_timeout = 1.0;
 		gcfs_stat(e.ino, &e.attr);

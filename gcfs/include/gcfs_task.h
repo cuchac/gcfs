@@ -13,7 +13,6 @@ class GCFS_Task {
 
 public:
 							GCFS_Task(const char * sName);
-							GCFS_Task(const GCFS_Task & sCopy);
 
 public:
 	std::string			m_sName;
@@ -36,20 +35,21 @@ public:
 
 };
 
-class GCFS_Tasks {
+class GCFS_TaskManager {
 public:
 
-	bool					AddTask(const char * sName);
+	bool									AddTask(const char * sName);
+	bool									DeleteTask(const char * sName);
 
-	size_t				GetCount();
+	size_t								GetTaskCount();
 
-	GCFS_Task*			Get(int iIndex);
-	GCFS_Task*			Get(const char * sName);
-	int					GetIndex(const char * sName);
+	GCFS_Task*							GetTask(int iIndex);
+	GCFS_Task*							GetTask(const char * sName);
+	int									GetTaskIndex(const char * sName);
 
 private:
 
-	std::vector<GCFS_Task> 			m_vTasks;
+	std::vector<GCFS_Task*> 		m_vTasks;
 	std::map<std::string, int> 	m_mTaskNames;
 };
 
