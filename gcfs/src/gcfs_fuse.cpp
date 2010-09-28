@@ -292,14 +292,57 @@ static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 	{
 		struct fuse_entry_param e = {0};
 
-		g_sTasks.AddTask(name);
-		e.ino = GCFS_DIRINODE(g_sTasks.GetTaskCount()-1, GCFS_DIR_TASK);
-		e.attr_timeout = 1.0;
-		e.entry_timeout = 1.0;
-		gcfs_stat(e.ino, &e.attr);
-	
-		fuse_reply_entry(req, &e);
-		return;
+		if(g_sTasks.AddTask(name))
+		{
+			e.ino = GCFS_DIRINODE(g_sTasks.GetTaskCount()-1, GCFS_DIR_TASK);
+			e.attr_timeout = 1.0;
+			e.entry_timeout = 1.0;
+			gcfs_stat(e.ino, &e.attr);
+
+			fuse_reply_entry(req, &e);
+			return;
+		}
+		fuse_reply_err(req, EEXIST);
+	}
+
+	fuse_reply_err(req, EACCES);
+}
+
+static void gcfs_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name)
+{
+	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
+	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+
+	if(parent == FUSE_ROOT_ID)
+	{
+		if(g_sTasks.GetTaskIndex(name) >= 0)
+		{
+			g_sTasks.DeleteTask(name);
+			
+			fuse_reply_err(req, 0);
+			return;
+		}
+		fuse_reply_err(req, ENOENT);
+	}
+
+	fuse_reply_err(req, EACCES);
+}
+
+static void gcfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
+{
+	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
+	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+
+ if(parent == FUSE_ROOT_ID)
+	{
+		if(g_sTasks.GetTaskIndex(name) >= 0)
+		{
+			g_sTasks.DeleteTask(name);
+
+			fuse_reply_err(req, 0);
+			return;
+		}
+		fuse_reply_err(req, ENOENT);
 	}
 
 	fuse_reply_err(req, EACCES);
@@ -317,6 +360,8 @@ int init_fuse(int argc, char *argv[])
 	gcfs_oper.read		= gcfs_read;
 	gcfs_oper.write	= gcfs_write;
 	gcfs_oper.mkdir	= gcfs_mkdir;
+	gcfs_oper.rmdir	= gcfs_rmdir;
+	gcfs_oper.unlink	= gcfs_unlink;
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct fuse_chan *ch;
