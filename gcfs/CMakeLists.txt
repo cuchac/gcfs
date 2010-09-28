@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 PROJECT(gcfs)
 
-include_directories(include)
+include_directories(include ./)
 
 INCLUDE(FindPkgConfig)
 
@@ -14,5 +14,6 @@ include_directories(${FUSE_INCLUDE_DIRS})
 
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
-ADD_EXECUTABLE(gcfs src/gcfs_config.cpp src/gcfs_fuse.cpp src/gcfs.cpp src/gcfs_task_config.cpp)
+add_subdirectory(lib)
 
+ADD_EXECUTABLE(gcfs lib/module_condor/gcfs_servicecondor.cpp src/gcfs_task.cpp src/gcfs_service.cpp src/gcfs_config.cpp src/gcfs_fuse.cpp src/gcfs.cpp src/gcfs_config_values.cpp)

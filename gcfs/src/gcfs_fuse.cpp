@@ -19,7 +19,7 @@
 #include <assert.h>
 #include <gcfs.h>
 #include <gcfs_fuse.h>
-#include <gcfs_task_config.h>
+#include <gcfs_task.h>
 
 static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 {
@@ -243,7 +243,7 @@ static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 
 	if(GCFS_IS_CONFIGINODE(iIndex))
 	{
-		GCFS_TaskConfig::ConfigValue * pValue = (GCFS_TaskConfig::ConfigValue *) fi->fh;
+		GCFS_ConfigValue * pValue = (GCFS_ConfigValue *) fi->fh;
 
 		std::string buff;
 		pValue->PrintValue(buff);
@@ -267,7 +267,7 @@ static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 
 	if(GCFS_IS_CONFIGINODE(iIndex))
 	{
-		GCFS_TaskConfig::ConfigValue * pValue = (GCFS_TaskConfig::ConfigValue *) fi->fh;
+		GCFS_ConfigValue * pValue = (GCFS_ConfigValue *) fi->fh;
 
 		if(pValue->SetValue(buf))
 			fuse_reply_write(req, size);

@@ -1,20 +1,16 @@
-#include <gcfs.h>
-#include <gcfs_fuse.h>
+#include "gcfs.h"
+#include "gcfs_fuse.h"
 #include "gcfs_config.h"
-#include "gcfs_task_config.h"
+#include "gcfs_task.h"
+
 #include <stdio.h>
 
-GCFS_Config g_sConfiguration;
+GCFS_Config g_sConfig;
 GCFS_Tasks g_sTasks;
 
 int main(int argc, char *argv[]){
 
-	g_sConfiguration.m_vServices.push_back(GCFS_SERVICE_BALANCED);
-	g_sConfiguration.m_vServiceNames.push_back(GCFS_SERVICE_BALANCED);
-	g_sConfiguration.m_vServices.push_back("Test");
-	g_sConfiguration.m_vServiceNames.push_back("Test");
-	g_sConfiguration.m_vServices.push_back("Test2");
-	g_sConfiguration.m_vServiceNames.push_back("Test2");
+	g_sConfig.AddService("condor", "test");
 
 	g_sTasks.AddTask("Test");
 	g_sTasks.AddTask("Test2");
