@@ -8,15 +8,15 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_iService("service", "", g_sConfig.m_vServiceNames),
 	m_bCompleted(false)
 {
-	m_vIndexToName.push_back(&m_iMemory);
-	m_vIndexToName.push_back(&m_iProcesses);
-	m_vIndexToName.push_back(&m_iTimeout);
-	m_vIndexToName.push_back(&m_iService);
+	m_vConfigValues.push_back(&m_iMemory);
+	m_vConfigValues.push_back(&m_iProcesses);
+	m_vConfigValues.push_back(&m_iTimeout);
+	m_vConfigValues.push_back(&m_iService);
 
-	m_mNameToIndex["memory"] = 0;
-	m_mNameToIndex["processes"] = 1;
-	m_mNameToIndex["timeout"] = 2;
-	m_mNameToIndex["service"] = 3;
+	m_mConfigNameToIndex["memory"] = 0;
+	m_mConfigNameToIndex["processes"] = 1;
+	m_mConfigNameToIndex["timeout"] = 2;
+	m_mConfigNameToIndex["service"] = 3;
 }
 
 bool GCFS_TaskManager::AddTask(const char * sName)

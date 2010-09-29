@@ -45,7 +45,6 @@ bool GCFS_ConfigString::PrintValue(std::string& buff)
 	return true;
 }
 
-
 bool GCFS_ConfigChoice::SetValue(const char * sValue)
 {
 	std::string value = trimStr(sValue);

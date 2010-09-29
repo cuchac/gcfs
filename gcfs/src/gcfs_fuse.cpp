@@ -104,8 +104,8 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_CONTROLINODE(iTaskIndex, 0);
 	}
-	else if(iParentIndex == GCFS_DIR_CONFIG && g_sTasks.GetTask(iTaskIndex)->m_mNameToIndex.find(name) != g_sTasks.GetTask(iTaskIndex)->m_mNameToIndex.end()){
-		e.ino = GCFS_CONFIGINODE(iTaskIndex, g_sTasks.GetTask(iTaskIndex)->m_mNameToIndex[name]);
+	else if(iParentIndex == GCFS_DIR_CONFIG && g_sTasks.GetTask(iTaskIndex)->m_mConfigNameToIndex.find(name) != g_sTasks.GetTask(iTaskIndex)->m_mConfigNameToIndex.end()){
+		e.ino = GCFS_CONFIGINODE(iTaskIndex, g_sTasks.GetTask(iTaskIndex)->m_mConfigNameToIndex[name]);
 	}
 	else
 	{
@@ -177,8 +177,8 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 		case GCFS_DIR_CONFIG:
 		{
 			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
-			for(int iIndex = 0; iIndex < g_sTasks.GetTask(iTaskIndex)->m_vIndexToName.size(); iIndex++)
-				dirbuf_add(req, buff, g_sTasks.GetTask(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
+			for(int iIndex = 0; iIndex < g_sTasks.GetTask(iTaskIndex)->m_vConfigValues.size(); iIndex++)
+				dirbuf_add(req, buff, g_sTasks.GetTask(iTaskIndex)->m_vConfigValues[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
 			break;
 		}
 
@@ -223,7 +223,7 @@ static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
 	else if(GCFS_IS_CONFIGINODE(iIndex))
 	{
 		int iConfigIndex = ino - GCFS_CONFIGINODE(iTaskIndex, 0);
-		fi->fh = (uint64_t)g_sTasks.GetTask(iTaskIndex)->m_vIndexToName[iConfigIndex];
+		fi->fh = (uint64_t)g_sTasks.GetTask(iTaskIndex)->m_vConfigValues[iConfigIndex];
 		
 		fuse_reply_open(req, fi);
 	}

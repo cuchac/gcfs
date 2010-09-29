@@ -30,8 +30,8 @@ public:
 	GCFS_ConfigChoice							m_iService;
 
 
-	std::vector<GCFS_ConfigValue*>		m_vIndexToName;
-	std::map<std::string, int> 			m_mNameToIndex;
+	std::vector<GCFS_ConfigValue*>		m_vConfigValues;
+	std::map<std::string, int> 			m_mConfigNameToIndex;
 
 };
 
