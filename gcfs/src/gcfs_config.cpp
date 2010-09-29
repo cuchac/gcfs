@@ -1,4 +1,6 @@
 #include "lib/simpleini/SimpleIni.h"
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "gcfs_config.h"
 #include "gcfs_service.h"
@@ -18,22 +20,46 @@ bool GCFS_Config::loadConfig()
 
 	std::string sHomePath;
 	getHomePath(sHomePath);
-	
-	ini.LoadFile((sHomePath+"/.config/gcfs/config.conf").c_str());
 
-	m_sDataDir = ini.GetValue("Global", "dataPath", (sHomePath+"/.local/gcfs/data/").c_str());
-
-	CSimpleIniA::TNamesDepend vSections;
-	ini.GetAllSections(vSections);
-
-	CSimpleIniA::TNamesDepend::iterator it;
-	for(it = vSections.begin(); it != vSections.end(); ++it)
+	if(access((sHomePath+GCFS_CONFIG_CONFIGFILE).c_str(), R_OK) == 0)
 	{
-		if(it->pItem == "Global")
-			continue;
+		ini.LoadFile((sHomePath+GCFS_CONFIG_CONFIGFILE).c_str());
 
+		m_sDataDir = ini.GetValue("Global", "dataPath", (sHomePath+GCFS_CONFIG_DATADIR).c_str());
+
+		// Ensure directory exists
+		mkdirRecursive(m_sDataDir.c_str());
+
+		CSimpleIniA::TNamesDepend vSections;
+		ini.GetAllSections(vSections);
+
+		CSimpleIniA::TNamesDepend::iterator it;
+		for(it = vSections.begin(); it != vSections.end(); ++it)
+		{
+			if(it->pItem == "Global")
+				continue;
+
+			const char * sDriver = ini.GetValue(it->pItem, "driver", "");
+
+			if(!sDriver[0])
+				continue;
+
+			AddService(sDriver, it->pItem);
+			
+			printf("Adding service: %s, driver:%s\n", it->pItem, sDriver);
+
+		}
+	}else
+	{
+		printf("No config file found! Creting default at: %s\n", (sHomePath+GCFS_CONFIG_CONFIGDIR).c_str());
+		printf("To actualy use Gcfs, you have to modify the configuration file\n");
 		
-		
+		// Config file does not exists
+		mkdirRecursive((sHomePath+GCFS_CONFIG_CONFIGDIR).c_str());
+
+		int hFile = creat((sHomePath+GCFS_CONFIG_CONFIGFILE).c_str(), S_IRUSR | S_IWUSR);
+		write(hFile, GCFS_CONFIG_DEFAULTCONFIG, sizeof(GCFS_CONFIG_DEFAULTCONFIG)-1);
+		close(hFile);
 	}
 }
 
@@ -57,6 +83,27 @@ bool GCFS_Config::getHomePath(std::string &buffer)
 		buffer = getpwuid(getuid())->pw_dir;
 	
 #endif
+}
+
+bool GCFS_Config::mkdirRecursive(const char *path)
+{
+        char opath[1024];
+        char *p;
+        size_t len;
+
+        strncpy(opath, path, sizeof(opath));
+        len = strlen(opath);
+        if(opath[len - 1] == '/')
+                opath[len - 1] = '\0';
+        for(p = opath; *p; p++)
+                if(*p == '/') {
+                        *p = '\0';
+                        if(access(opath, F_OK))
+                                mkdir(opath, S_IRWXU);
+                        *p = '/';
+                }
+        if(access(opath, F_OK))         /* if path is not terminated with / */
+                mkdir(opath, S_IRWXU);
 }
 
 // Service management

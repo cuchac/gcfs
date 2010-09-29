@@ -10,6 +10,8 @@ GCFS_TaskManager g_sTasks;
 
 int main(int argc, char *argv[]){
 
+	g_sConfig.loadConfig();
+	
 	g_sConfig.AddService("condor", "test");
 
 	g_sTasks.AddTask("Test");
