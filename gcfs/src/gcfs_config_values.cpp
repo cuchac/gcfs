@@ -5,6 +5,15 @@
 #include <stdio.h>
 #include <string.h>
 
+std::string GCFS_ConfigValue::trimStr(const std::string& Src, const std::string& c)
+{
+	int p2 = Src.find_last_not_of(c);
+	if (p2 == std::string::npos) return std::string();
+	int p1 = Src.find_first_not_of(c);
+	if (p1 == std::string::npos) p1 = 0;
+	return Src.substr(p1, (p2-p1)+1);
+}
+
 bool GCFS_ConfigInt::SetValue(const char * sValue)
 {
 	m_iValue = atoi(sValue);
@@ -39,9 +48,11 @@ bool GCFS_ConfigString::PrintValue(std::string& buff)
 
 bool GCFS_ConfigChoice::SetValue(const char * sValue)
 {
+	std::string value = trimStr(sValue);
+	
 	int iVal = -1;
 	for(int iIndex = 0; iIndex < m_vChoices.size(); iIndex ++)
-		if(strcasecmp(m_vChoices[iIndex].c_str(), sValue) == 0)
+		if(strcasecmp(m_vChoices[iIndex].c_str(), value.c_str()) == 0)
 			iVal = iIndex;
 
 	if(iVal < 0)

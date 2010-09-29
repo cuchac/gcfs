@@ -15,6 +15,8 @@ public:
 	virtual	bool	SetValue(const char * sValue) = 0;
 	virtual	bool	PrintValue(std::string &buff) = 0;
 
+	std::string 	trimStr(const std::string& Src, const std::string& c = " \r\n");
+
 public:
 	const char * 	m_sName;
 };
