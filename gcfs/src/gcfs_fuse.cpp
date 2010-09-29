@@ -24,29 +24,38 @@
 static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 {
 	stbuf->st_ino = ino;
-	int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
 
-	if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTasks.getTaskCount())
-		return -1;
-	
-	if(ino == FUSE_ROOT_ID) {
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	}
-	else if(iIndex < GCFS_DIR_LAST) // Task dir
+	if(ino > g_sTasks.m_uiFirstFileInode)
 	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink =2;
-	}
-	else if(iIndex >= GCFS_DIR_LAST)
-	{
-		stbuf->st_mode = S_IFREG | 0444;
+		stbuf->st_mode = S_IFREG | 0744;
 		stbuf->st_nlink = 1;
 	}
 	else
 	{
-		printf("Error stat inode: %d\n", (int)ino);
-		return -1;
+		int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
+
+		if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTasks.getTaskCount())
+			return -1;
+
+		if(ino == FUSE_ROOT_ID) {
+			stbuf->st_mode = S_IFDIR | 0755;
+			stbuf->st_nlink = 2;
+		}
+		else if(iIndex < GCFS_DIR_LAST) // Task dir
+		{
+			stbuf->st_mode = S_IFDIR | 0755;
+			stbuf->st_nlink =2;
+		}
+		else if(iIndex >= GCFS_DIR_LAST)
+		{
+			stbuf->st_mode = S_IFREG | 0444;
+			stbuf->st_nlink = 1;
+		}
+		else
+		{
+			printf("Error stat inode: %d\n", (int)ino);
+			return -1;
+		}
 	}
 
 	return 0;
@@ -81,6 +90,10 @@ static void gcfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
 	struct fuse_entry_param e = {0};
+
+	GCFS_Task* pTask = NULL;
+	GCFS_Task::File* pFile = NULL;
+	
 	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
 	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
 
@@ -96,7 +109,7 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_DATA);
 	}
-	else if(iParentIndex == GCFS_DIR_TASK && g_sTasks.getTask(iTaskIndex)->m_bCompleted && strcmp(name, "result")==0)
+	else if(iParentIndex == GCFS_DIR_TASK && (pTask = g_sTasks.getTask(iTaskIndex)) && pTask->m_bCompleted && strcmp(name, "result")==0)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_RESULT);
 	}
@@ -104,8 +117,11 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_CONTROLINODE(iTaskIndex, 0);
 	}
-	else if(iParentIndex == GCFS_DIR_CONFIG && g_sTasks.getTask(iTaskIndex)->m_mConfigNameToIndex.find(name) != g_sTasks.getTask(iTaskIndex)->m_mConfigNameToIndex.end()){
-		e.ino = GCFS_CONFIGINODE(iTaskIndex, g_sTasks.getTask(iTaskIndex)->m_mConfigNameToIndex[name]);
+	else if(iParentIndex == GCFS_DIR_CONFIG && (pTask = g_sTasks.getTask(iTaskIndex)) && pTask->m_mConfigNameToIndex.find(name) != pTask->m_mConfigNameToIndex.end()){
+		e.ino = GCFS_CONFIGINODE(iTaskIndex, pTask->m_mConfigNameToIndex[name]);
+	}
+	else if(iParentIndex == GCFS_DIR_DATA && (pTask = g_sTasks.getTask(iTaskIndex)) &&  pTask->m_mDataFiles.find(name) != pTask->m_mDataFiles.end()){
+		e.ino = pTask->m_mDataFiles[name]->m_iInode;
 	}
 	else
 	{
@@ -185,8 +201,9 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 		case GCFS_DIR_DATA:
 		{
 			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
-			/*for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
-				dirbuf_add(req, &b, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));*/
+			GCFS_Task::Files & mFiles = g_sTasks.getTask(iTaskIndex)->m_mDataFiles;
+			for(GCFS_Task::Files::iterator it = mFiles.begin(); it != mFiles.end() ; ++it)
+				dirbuf_add(req, buff, it->first.c_str(), it->second->m_iInode);
 			break;
 		}
 
@@ -210,75 +227,113 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
 			  struct fuse_file_info *fi)
 {
-	int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
-	int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
-
-	// Use direct-io -> read does not care about file size
-	fi->direct_io = 1;
-	
-	if (iIndex < GCFS_DIR_LAST)
-		fuse_reply_err(req, EISDIR);
-	/*else if ((fi->flags & 3) != O_RDONLY)
-		fuse_reply_err(req, EACCES);*/
-	else if(GCFS_IS_CONFIGINODE(iIndex))
+	if(ino > g_sTasks.m_uiFirstFileInode)
 	{
-		int iConfigIndex = ino - GCFS_CONFIGINODE(iTaskIndex, 0);
-		fi->fh = (uint64_t)g_sTasks.getTask(iTaskIndex)->m_vConfigValues[iConfigIndex];
-		
+		GCFS_Task::File *pFile = g_sTasks.getInodeFile(ino);
+
+		fi->fh = (uint64_t)pFile;
+		fi->direct_io = 1;
+
 		fuse_reply_open(req, fi);
 	}
 	else
 	{
-		printf("Error open: inode: %d\n", (int)ino);
-		fuse_reply_err(req, EACCES);
-		return;
+		int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
+		int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
+
+		// Use direct-io -> read does not care about file size
+		fi->direct_io = 1;
+
+		if (iIndex < GCFS_DIR_LAST)
+			fuse_reply_err(req, EISDIR);
+		/*else if ((fi->flags & 3) != O_RDONLY)
+			fuse_reply_err(req, EACCES);*/
+		else if(GCFS_IS_CONFIGINODE(iIndex))
+		{
+			int iConfigIndex = ino - GCFS_CONFIGINODE(iTaskIndex, 0);
+			fi->fh = (uint64_t)g_sTasks.getTask(iTaskIndex)->m_vConfigValues[iConfigIndex];
+
+			fuse_reply_open(req, fi);
+		}
+		else
+		{
+			printf("Error open: inode: %d\n", (int)ino);
+			fuse_reply_err(req, EACCES);
+			return;
+		}
 	}
 }
 
 static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 			  off_t off, struct fuse_file_info *fi)
 {
-	int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
-	int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
-
-	if(GCFS_IS_CONFIGINODE(iIndex))
+	if(ino > g_sTasks.m_uiFirstFileInode)
 	{
-		GCFS_ConfigValue * pValue = (GCFS_ConfigValue *) fi->fh;
+		GCFS_Task::File *pFile = (GCFS_Task::File *)fi->fh;
+		fi->direct_io = 1;
 
-		std::string buff;
-		pValue->PrintValue(buff);
-		buff += "\n";
+		char *buff = new char[size];
+		lseek(pFile->m_hFile, off, SEEK_SET);
+		size = read(pFile->m_hFile, buff, size);
 
-		reply_buf_limited(req, buff, off, size);
+		fuse_reply_buf(req, buff, size);
+		delete buff;
 	}
 	else
 	{
-		printf("Error read: inode: %d\n", (int)ino);
-		fuse_reply_err(req, EACCES);
-		return;
+		int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
+		int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
+
+		if(GCFS_IS_CONFIGINODE(iIndex))
+		{
+			GCFS_ConfigValue * pValue = (GCFS_ConfigValue *) fi->fh;
+
+			std::string buff;
+			pValue->PrintValue(buff);
+			buff += "\n";
+
+			reply_buf_limited(req, buff, off, size);
+		}
+		else
+		{
+			printf("Error read: inode: %d\n", (int)ino);
+			fuse_reply_err(req, EACCES);
+			return;
+		}
 	}
 }
 
 static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 		       size_t size, off_t off, struct fuse_file_info *fi)
 {
-	int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
-	int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
-
-	if(GCFS_IS_CONFIGINODE(iIndex))
+	if(ino > g_sTasks.m_uiFirstFileInode)
 	{
-		GCFS_ConfigValue * pValue = (GCFS_ConfigValue *) fi->fh;
+		GCFS_Task::File *pFile = (GCFS_Task::File *)fi->fh;
+		lseek(pFile->m_hFile, off, SEEK_SET);
+		size = write(pFile->m_hFile, buf, size);
 
-		if(pValue->SetValue(buf))
-			fuse_reply_write(req, size);
-		else
-			fuse_reply_err(req, EINVAL);
+		fuse_reply_write(req, size);
 	}
 	else
 	{
-		printf("Error read: inode: %d\n", (int)ino);
-		fuse_reply_err(req, EACCES);
-		return;
+		int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
+		int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
+
+		if(GCFS_IS_CONFIGINODE(iIndex))
+		{
+			GCFS_ConfigValue * pValue = (GCFS_ConfigValue *) fi->fh;
+
+			if(pValue->SetValue(buf))
+				fuse_reply_write(req, size);
+			else
+				fuse_reply_err(req, EINVAL);
+		}
+		else
+		{
+			printf("Error write: inode: %d\n", (int)ino);
+			fuse_reply_err(req, EACCES);
+			return;
+		}
 	}
 }
 
@@ -333,7 +388,7 @@ static void gcfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
 	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
 
- if(parent == FUSE_ROOT_ID)
+	if(parent == FUSE_ROOT_ID)
 	{
 		if(g_sTasks.getTaskIndex(name) >= 0)
 		{
@@ -343,6 +398,65 @@ static void gcfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 			return;
 		}
 		fuse_reply_err(req, ENOENT);
+	}
+	else if(iParentIndex == GCFS_DIR_DATA)
+	{
+		GCFS_Task * pTask;
+		if((pTask = g_sTasks.getTask(iTaskIndex)) && pTask->m_mDataFiles.find(name) != pTask->m_mDataFiles.end())
+		{
+			pTask->deleteDataFile(name);
+
+			fuse_reply_err(req, 0);
+			return;
+		}
+		fuse_reply_err(req, ENOENT);
+	}
+
+	fuse_reply_err(req, EACCES);
+}
+
+static void gcfs_create(fuse_req_t req, fuse_ino_t parent, const char *name,
+			mode_t mode, struct fuse_file_info *fi)
+{
+	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
+	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+
+	if(iParentIndex == GCFS_DIR_DATA)
+	{
+		struct fuse_entry_param e = {0};
+
+		GCFS_Task::File *pFile = g_sTasks.getTask(iTaskIndex)->createDataFile(name);
+
+		e.ino = pFile->m_iInode;
+
+		fi->fh = (uint64_t)pFile;
+
+		gcfs_stat(e.ino, &e.attr);
+		
+		fuse_reply_create(req, &e, fi);
+	}
+
+	fuse_reply_err(req, EACCES);
+}
+
+static void gcfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
+		       mode_t mode, dev_t rdev)
+{
+
+	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
+	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+
+	if(iParentIndex == GCFS_DIR_DATA && mode & S_IFREG)
+	{
+		struct fuse_entry_param e = {0};
+
+		GCFS_Task::File *pFile = g_sTasks.getTask(iTaskIndex)->createDataFile(name);
+
+		e.ino = pFile->m_iInode;
+
+		gcfs_stat(e.ino, &e.attr);
+
+		fuse_reply_entry(req, &e);
 	}
 
 	fuse_reply_err(req, EACCES);
@@ -362,6 +476,8 @@ int init_fuse(int argc, char *argv[])
 	gcfs_oper.mkdir	= gcfs_mkdir;
 	gcfs_oper.rmdir	= gcfs_rmdir;
 	gcfs_oper.unlink	= gcfs_unlink;
+	gcfs_oper.create	= gcfs_create;
+	gcfs_oper.mknod	= gcfs_mknod;
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct fuse_chan *ch;

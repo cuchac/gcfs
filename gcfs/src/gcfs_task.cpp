@@ -1,5 +1,7 @@
 #include "gcfs_task.h"
 #include "gcfs_config.h"
+#include <fcntl.h>
+#include <stdio.h>
 
 GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_iMemory("memory", "1024"),
@@ -18,6 +20,82 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_mConfigNameToIndex["timeout"] = 2;
 	m_mConfigNameToIndex["service"] = 3;
 }
+
+GCFS_Task::File* GCFS_Task::createDataFile(const char * name)
+{
+	File *tmp = new File();
+
+	int iInode = g_sTasks.getInode(tmp);
+	char buff[32];
+	snprintf(buff, sizeof(buff), "%d", iInode);
+	
+	m_mDataFiles[name] = tmp;
+	m_mInodeToDataFiles[iInode] = tmp;
+
+	tmp->m_sPath = g_sConfig.m_sDataDir+buff;
+	tmp->m_iInode = iInode;
+	tmp->m_hFile = open(tmp->m_sPath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR);
+	tmp->m_pTask = this;
+}
+
+GCFS_Task::File* GCFS_Task::deleteDataFile(const char * name)
+{
+	File *tmp = m_mDataFiles[name];
+
+	close(tmp->m_hFile);
+
+	unlink(tmp->m_sPath.c_str());
+
+	g_sTasks.putInode(tmp->m_iInode);
+
+	delete tmp;
+
+	m_mDataFiles.erase(name);
+}
+
+GCFS_Task::Files::const_iterator GCFS_Task::getDataFiles()
+{
+	return m_mDataFiles.begin();
+}
+
+GCFS_Task::File* GCFS_Task::createResultFile(const char * name)
+{
+	File *tmp = new File();
+	
+	unsigned int iInode = g_sTasks.getInode(tmp);
+	char buff[32];
+	snprintf(buff, sizeof(buff), "%d", iInode);
+
+	m_mResultFiles[name] = tmp;
+	m_mInodeToResultFiles[iInode] = tmp;
+
+	tmp->m_sPath = g_sConfig.m_sDataDir+buff;
+	tmp->m_iInode = iInode;
+	tmp->m_hFile = creat(tmp->m_sPath.c_str(), S_IRUSR | S_IWUSR);
+	tmp->m_pTask = this;
+}
+
+GCFS_Task::File* GCFS_Task::deleteResultFile(const char * name)
+{
+	File *tmp = m_mResultFiles[name];
+
+	close(tmp->m_hFile);
+
+	unlink(tmp->m_sPath.c_str());
+
+	g_sTasks.putInode(tmp->m_iInode);
+
+	delete tmp;
+
+	m_mResultFiles.erase(name);
+}
+
+GCFS_Task::Files::const_iterator GCFS_Task::getResultFiles()
+{
+	return m_mResultFiles.begin();
+}
+
+// Task Manager
 
 bool GCFS_TaskManager::addTask(const char * sName)
 {
@@ -62,4 +140,29 @@ int GCFS_TaskManager::getTaskIndex(const char * sName)
 		return it->second;
 	else
 		return -1;
+}
+
+unsigned int GCFS_TaskManager::getInode(GCFS_Task::File* pFile)
+{
+	m_mInodesOwner[m_uiFirstFileInode] = pFile;
+	
+	return m_uiFirstFileInode--;
+}
+
+bool GCFS_TaskManager::putInode(int iInode)
+{
+	std::map<int, GCFS_Task::File *>::iterator it;
+	if((it = m_mInodesOwner.find(iInode)) == m_mInodesOwner.end())
+		return false;
+
+	m_mInodesOwner.erase(it);
+}
+
+GCFS_Task::File* GCFS_TaskManager::getInodeFile(int iInode)
+{
+	std::map<int, GCFS_Task::File *>::iterator it;
+	if((it = m_mInodesOwner.find(iInode)) != m_mInodesOwner.end())
+		return it->second;
+	else
+		return NULL;
 }
