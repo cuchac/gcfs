@@ -1,17 +1,22 @@
-#include "include/gcfs_service.h"
+#include "gcfs_service.h"
+#include "config.h"
 
-#include "lib/module_condor/gcfs_servicecondor.h"
+#ifdef GCFS_MODULE_CONDOR
+	#include "lib/module_condor/gcfs_servicecondor.h"
+#endif
 
 #include <string.h>
 #include <stdio.h>
 
 GCFS_Service*	GCFS_Service::createService(const char * sModule, const char * sName)
 {
+	
+#ifdef GCFS_MODULE_CONDOR
 	if(strcasecmp(sModule, "condor") == 0)
 		return new GCFS_ServiceCondor(sName);
-	else
-	{
-		printf("Unknown service driver: %s\n", sModule);
-		return NULL;
-	}
+#endif
+		
+	printf("Error! Unknown service driver: %s\n", sModule);
+	return NULL;
+
 }

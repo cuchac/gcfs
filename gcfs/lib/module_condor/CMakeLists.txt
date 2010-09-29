@@ -1,1 +1,10 @@
+add_library(gcfs_condor gcfs_servicecondor.cpp)
 
+option(GCFS_MODULE_CONDOR "Add support for Condor grid framework")
+if (GCFS_MODULE_CONDOR)
+	get_target_property(GCFS_MODULES gcfs MODULES)
+	set_target_properties(gcfs PROPERTIES MODULES ${GCFS_MODULES} gcfs_condor)
+	message(STATUS "   Support for Condor: YES")
+else(GCFS_MODULE_CONDOR)
+   message(STATUS "   Support for Condor: NO")
+endif(GCFS_MODULE_CONDOR)

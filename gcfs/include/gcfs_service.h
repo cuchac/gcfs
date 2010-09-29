@@ -5,7 +5,10 @@
 #include <string>
 
 class GCFS_Task;
+
+#ifndef INCLUDED_SimpleIni_h
 class CSimpleIniA;
+#endif
 
 class GCFS_Service
 {

@@ -1,7 +1,7 @@
+#include "lib/simpleini/SimpleIni.h"
+
 #include "gcfs_config.h"
 #include "gcfs_service.h"
-
-#include "lib/simpleini/SimpleIni.h"
 
 #ifdef _WIN32
 	//#include <windows.h>
@@ -10,7 +10,6 @@
 	#include <sys/types.h>
 	#include <pwd.h>
 #endif
-
 
 bool GCFS_Config::loadConfig()
 {

@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 2.6)
 
-PROJECT(gcfs)
+PROJECT(gcfs_)
 
 include_directories(include ./)
 
+# Find FUSE libray
 INCLUDE(FindPkgConfig)
 
 pkg_check_modules(FUSE REQUIRED fuse)
@@ -12,8 +13,24 @@ link_libraries(${FUSE_LIBRARIES})
 link_directories(${FUSE_LIBRARY_DIR})
 include_directories(${FUSE_INCLUDE_DIRS})
 
+# Necesary for FUSE to compile
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
+# Create main executable
+ADD_EXECUTABLE(gcfs src/gcfs_task.cpp src/gcfs_service.cpp src/gcfs_config.cpp src/gcfs_fuse.cpp src/gcfs.cpp src/gcfs_config_values.cpp)
+
+# Add modules
 add_subdirectory(lib)
 
-ADD_EXECUTABLE(gcfs lib/module_condor/gcfs_servicecondor.cpp src/gcfs_task.cpp src/gcfs_service.cpp src/gcfs_config.cpp src/gcfs_fuse.cpp src/gcfs.cpp src/gcfs_config_values.cpp)
+# Append selected modules as dependency and link app with them
+get_target_property(GCFS_MODULES gcfs MODULES)
+IF(NOT (GCFS_MODULES STREQUAL ""))
+	add_dependencies(gcfs ${GCFS_MODULES})
+	target_link_libraries(gcfs ${GCFS_MODULES})
+ENDIF(NOT (GCFS_MODULES STREQUAL ""))
+	
+# Generate configuraton header with selected modules
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+include_directories(include ${CMAKE_CURRENT_BINARY_DIR}) # Include also build directory to allow #inlude of config.h
+
+set( CMAKE_VERBOSE_MAKEFILE 1 )
