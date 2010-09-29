@@ -14,8 +14,8 @@ int main(int argc, char *argv[]){
 	
 	g_sConfig.AddService("condor", "test");
 
-	g_sTasks.AddTask("Test");
-	g_sTasks.AddTask("Test2");
+	g_sTasks.addTask("Test");
+	g_sTasks.addTask("Test2");
 
 	return init_fuse(argc, argv);
 }

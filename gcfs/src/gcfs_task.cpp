@@ -19,16 +19,16 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_mConfigNameToIndex["service"] = 3;
 }
 
-bool GCFS_TaskManager::AddTask(const char * sName)
+bool GCFS_TaskManager::addTask(const char * sName)
 {
 	m_vTasks.push_back(new GCFS_Task(sName));
 	m_mTaskNames[sName] = m_vTasks.size()-1;
 }
 
-bool GCFS_TaskManager::DeleteTask(const char * sName)
+bool GCFS_TaskManager::deleteTask(const char * sName)
 {
 	int iIndex = -1;
-	if((iIndex = GetTaskIndex(sName)) >= 0)
+	if((iIndex = getTaskIndex(sName)) >= 0)
 	{
 		delete m_vTasks[iIndex];
 		m_vTasks.erase(m_vTasks.begin()+iIndex);
@@ -36,17 +36,17 @@ bool GCFS_TaskManager::DeleteTask(const char * sName)
 	}
 }
 
-size_t GCFS_TaskManager::GetTaskCount()
+size_t GCFS_TaskManager::getTaskCount()
 {
 	return (int)m_vTasks.size();
 }
 
-GCFS_Task* GCFS_TaskManager::GetTask(int iIndex)
+GCFS_Task* GCFS_TaskManager::getTask(int iIndex)
 {
 	return m_vTasks[iIndex];
 }
 
-GCFS_Task* GCFS_TaskManager::GetTask(const char * sName)
+GCFS_Task* GCFS_TaskManager::getTask(const char * sName)
 {
 	std::map<std::string, int>::iterator it;
 	if((it = m_mTaskNames.find(sName)) != m_mTaskNames.end())
@@ -55,7 +55,7 @@ GCFS_Task* GCFS_TaskManager::GetTask(const char * sName)
 		return NULL;
 }
 
-int GCFS_TaskManager::GetTaskIndex(const char * sName)
+int GCFS_TaskManager::getTaskIndex(const char * sName)
 {
 	std::map<std::string, int>::iterator it;
 	if((it = m_mTaskNames.find(sName)) != m_mTaskNames.end())

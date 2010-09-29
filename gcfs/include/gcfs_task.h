@@ -19,33 +19,38 @@ public:
 
 	bool					m_bCompleted;
 
-public:
-	// Task Configuration Values
-
-
+	
+// Task Configuration Values
 public:
 	GCFS_ConfigInt 							m_iMemory;
 	GCFS_ConfigInt 							m_iProcesses;
 	GCFS_ConfigInt 							m_iTimeout;
 	GCFS_ConfigChoice							m_iService;
 
-
+// Mapping of confg values for dynamic access
 	std::vector<GCFS_ConfigValue*>		m_vConfigValues;
 	std::map<std::string, int> 			m_mConfigNameToIndex;
 
+// Data and result files mapping from name to inode number
+	std::map<std::string, int>				m_mDataFiles;
+	std::map<std::string, int>				m_mResultFiles;
+	
 };
 
 class GCFS_TaskManager {
 public:
+// Manage tasks
+	bool									addTask(const char * sName);
+	bool									deleteTask(const char * sName);
 
-	bool									AddTask(const char * sName);
-	bool									DeleteTask(const char * sName);
+	size_t								getTaskCount();
 
-	size_t								GetTaskCount();
+	GCFS_Task*							getTask(int iIndex);
+	GCFS_Task*							getTask(const char * sName);
+	int									getTaskIndex(const char * sName);
 
-	GCFS_Task*							GetTask(int iIndex);
-	GCFS_Task*							GetTask(const char * sName);
-	int									GetTaskIndex(const char * sName);
+// Inode allocation
+	int									getInode();
 
 private:
 
