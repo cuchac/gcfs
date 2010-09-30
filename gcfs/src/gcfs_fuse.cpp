@@ -462,6 +462,22 @@ static void gcfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
 	fuse_reply_err(req, EACCES);
 }
 
+static void gcfs_statfs(fuse_req_t req, fuse_ino_t ino)
+{
+	struct statvfs stat = {};
+
+	stat.f_files = 256;
+	stat.f_bavail = 0;
+	stat.f_bfree = 0;
+	stat.f_blocks = 1024;
+	stat.f_frsize = 1024;
+	stat.f_bsize = 1024;
+	stat.f_fsid = ino;
+	stat.f_namemax = 256;
+
+	fuse_reply_statfs(req, &stat);
+}
+
 static struct fuse_lowlevel_ops gcfs_oper = {};
 
 int init_fuse(int argc, char *argv[])
@@ -478,6 +494,7 @@ int init_fuse(int argc, char *argv[])
 	gcfs_oper.unlink	= gcfs_unlink;
 	gcfs_oper.create	= gcfs_create;
 	gcfs_oper.mknod	= gcfs_mknod;
+	gcfs_oper.statfs	= gcfs_statfs;
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct fuse_chan *ch;
