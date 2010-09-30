@@ -62,7 +62,7 @@ if (FUSE_INCLUDE_DIR)
 
     find_library(FUSE_LIBRARIES
                  NAMES "libfuse.so"
-							  "libfuse.dylib"
+                       "libfuse_ino64.dylib"
                  PATHS "/usr/local"
                        "/usr"
                  ENV FUSE_ROOTDIR
