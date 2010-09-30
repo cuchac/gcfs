@@ -4,14 +4,25 @@ PROJECT(gcfs_)
 
 include_directories(include ./)
 
+SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 # Find FUSE libray
-INCLUDE(FindPkgConfig)
+INCLUDE(FindPkgConfig RESULT_VARIABLE GCFS_PKGCONFIG)
 
-pkg_check_modules(FUSE REQUIRED fuse)
+IF(NOT GCFS_PKGCONFIG)
+	pkg_check_modules(FUSE REQUIRED fuse)
 
-link_libraries(${FUSE_LIBRARIES})
-link_directories(${FUSE_LIBRARY_DIR})
-include_directories(${FUSE_INCLUDE_DIRS})
+	link_libraries(${FUSE_LIBRARIES})
+	link_directories(${FUSE_LIBRARY_DIR})
+	include_directories(${FUSE_INCLUDE_DIRS})
+ELSE(NOT GCFS_PKGCONFIG)
+	# Pkg-config not found, try FindFuse
+	find_package(FUSE REQUIRED)
+
+	link_libraries(${FUSE_LIBRARIES})
+	include_directories(${FUSE_INCLUDE_DIR})
+	
+ENDIF(NOT GCFS_PKGCONFIG)
 
 # Necesary for FUSE to compile
 add_definitions(-D_FILE_OFFSET_BITS=64)
