@@ -481,10 +481,10 @@ int init_fuse(int argc, char *argv[])
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct fuse_chan *ch;
-	char *mountpoint;
+	char *mountpoint = NULL;
 	int err = -1;
 
-	if (fuse_parse_cmdline(&args, &mountpoint, NULL, NULL) != -1 &&
+	if (fuse_parse_cmdline(&args, &mountpoint, NULL, NULL) != -1 && mountpoint &&
 	    (ch = fuse_mount(mountpoint, &args)) != NULL) {
 		struct fuse_session *se;
 
