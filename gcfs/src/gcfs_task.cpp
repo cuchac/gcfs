@@ -8,17 +8,21 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_iProcesses("processes", "1"),
 	m_iTimeout("timeout", "3600"),
 	m_iService("service", "", g_sConfig.m_vServiceNames),
-	m_bCompleted(false)
+	m_sExecutable("executable", "./data/executable"),
+	m_bCompleted(false),
+	m_sPermissions()
 {
 	m_vConfigValues.push_back(&m_iMemory);
 	m_vConfigValues.push_back(&m_iProcesses);
 	m_vConfigValues.push_back(&m_iTimeout);
 	m_vConfigValues.push_back(&m_iService);
+	m_vConfigValues.push_back(&m_sExecutable);
 
 	m_mConfigNameToIndex["memory"] = 0;
 	m_mConfigNameToIndex["processes"] = 1;
 	m_mConfigNameToIndex["timeout"] = 2;
 	m_mConfigNameToIndex["service"] = 3;
+	m_mConfigNameToIndex["executable"] = 3;
 }
 
 GCFS_Task::File* GCFS_Task::createDataFile(const char * name)
@@ -97,10 +101,19 @@ GCFS_Task::Files::const_iterator GCFS_Task::getResultFiles()
 
 // Task Manager
 
-bool GCFS_TaskManager::addTask(const char * sName)
+GCFS_TaskManager::GCFS_TaskManager():m_uiFirstFileInode(-1)
 {
-	m_vTasks.push_back(new GCFS_Task(sName));
+	m_mControlFiles["control"] = 0;
+	m_mControlFiles["executable"] = 1;
+	m_mControlFiles["status"] = 2;
+}
+
+GCFS_Task* GCFS_TaskManager::addTask(const char * sName)
+{
+	GCFS_Task* pTask = new GCFS_Task(sName);
+	m_vTasks.push_back(pTask);
 	m_mTaskNames[sName] = m_vTasks.size()-1;
+	return pTask;
 }
 
 bool GCFS_TaskManager::deleteTask(const char * sName)

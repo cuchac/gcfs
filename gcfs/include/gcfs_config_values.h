@@ -37,7 +37,6 @@ class GCFS_ConfigString: public GCFS_ConfigValue
 {
 public:
 						GCFS_ConfigString(const char *sName, const char *sDefault):GCFS_ConfigValue(sName){this->SetValue(sDefault);};
-						~GCFS_ConfigString();
 
 	bool				SetValue(const char * sValue);
 	bool				PrintValue(std::string &buff);

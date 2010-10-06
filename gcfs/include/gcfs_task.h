@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <sys/types.h>
 
 // Task Configuration
 class GCFS_Task {
@@ -26,6 +27,7 @@ public:
 	GCFS_ConfigInt 							m_iProcesses;
 	GCFS_ConfigInt 							m_iTimeout;
 	GCFS_ConfigChoice							m_iService;
+	GCFS_ConfigString							m_sExecutable;
 
 // Mapping of confg values for dynamic access
 	std::vector<GCFS_ConfigValue*>		m_vConfigValues;
@@ -55,15 +57,16 @@ public:
 	std::map<int, File*>						m_mInodeToDataFiles;
 	Files											m_mResultFiles;
 	std::map<int, File*>						m_mInodeToResultFiles;
-	
+
+	GCFS_Permissions 							m_sPermissions;
 };
 
 class GCFS_TaskManager {
 public:
-											GCFS_TaskManager():m_uiFirstFileInode(-1){};
+											GCFS_TaskManager();
 public:
 // Manage tasks
-	bool									addTask(const char * sName);
+	GCFS_Task*							addTask(const char * sName);
 	bool									deleteTask(const char * sName);
 
 	size_t								getTaskCount();
@@ -71,6 +74,10 @@ public:
 	GCFS_Task*							getTask(int iIndex);
 	GCFS_Task*							getTask(const char * sName);
 	int									getTaskIndex(const char * sName);
+
+private:
+	std::vector<GCFS_Task*> 		m_vTasks;
+	std::map<std::string, int> 	m_mTaskNames;
 	
 // Inode allocation and management
 public:
@@ -84,10 +91,11 @@ public:
 private:
 	std::map<int, GCFS_Task::File*>	m_mInodesOwner;
 
-private:
-
-	std::vector<GCFS_Task*> 		m_vTasks;
-	std::map<std::string, int> 	m_mTaskNames;
+// Control files
+public:
+	typedef std::map<std::string,int> ControlFiles;
+	
+	ControlFiles						m_mControlFiles;
 };
 
 #endif // GCFS_TASK_H

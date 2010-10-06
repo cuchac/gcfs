@@ -21,43 +21,74 @@
 #include <gcfs.h>
 #include <gcfs_fuse.h>
 #include <gcfs_task.h>
+#include <gcfs_config.h>
+#include <time.h>
 
 static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 {
 	stbuf->st_ino = ino;
+	stbuf->st_mode = 0;
 
-	if(ino > g_sTasks.m_uiFirstFileInode)
+	int iIndex = GCFS_INDEX_FROM_INODE(ino);
+	int iTaskIndex = GCFS_TASK_FROM_INODE(ino);
+	
+	mode_t iUmask = 0000;
+	GCFS_Permissions *pPermission = NULL;
+
+	if(ino == FUSE_ROOT_ID) {
+		stbuf->st_mode = S_IFDIR;
+		pPermission = &g_sConfig.m_sPermissions;
+	}
+	else if(ino > g_sTasks.m_uiFirstFileInode)
 	{
-		stbuf->st_mode = S_IFREG | 0744;
-		stbuf->st_nlink = 1;
+		stbuf->st_mode = S_IFREG;
+		pPermission = &g_sTasks.getInodeFile(ino)->m_pTask->m_sPermissions;
 	}
 	else
 	{
-		int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
-
 		if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTasks.getTaskCount())
 			return -1;
 
-		if(ino == FUSE_ROOT_ID) {
-			stbuf->st_mode = S_IFDIR | 0755;
-			stbuf->st_nlink = 2;
-		}
-		else if(iIndex < GCFS_DIR_LAST) // Task dir
+
+		if(iIndex < GCFS_DIR_LAST) // Task dir
 		{
-			stbuf->st_mode = S_IFDIR | 0755;
-			stbuf->st_nlink =2;
+			stbuf->st_mode = S_IFDIR;
+		}
+		else if(iIndex == GCFS_CONTROLINODE(0, GCFS_CONTROL_EXECUTABLE))
+		{
+			stbuf->st_mode = S_IFLNK;
 		}
 		else if(iIndex >= GCFS_DIR_LAST)
 		{
-			stbuf->st_mode = S_IFREG | 0444;
-			stbuf->st_nlink = 1;
+			stbuf->st_mode = S_IFREG;
+			iUmask = 07000 | S_IXGRP | S_IXUSR | S_IXOTH; // Remove execute permissions
 		}
 		else
 		{
 			printf("Error stat inode: %d\n", (int)ino);
 			return -1;
 		}
+
+		pPermission = &g_sTasks.getTask(iTaskIndex)->m_sPermissions;
 	}
+
+	if(pPermission)
+	{
+		stbuf->st_mode |= pPermission->m_sMode;
+		stbuf->st_uid = pPermission->m_iUid;
+		stbuf->st_uid = pPermission->m_iGid;
+	}
+
+	printf("First Stat: mode:%o\n", stbuf->st_mode);
+
+	stbuf->st_nlink = 1;
+	stbuf->st_mode &= ~iUmask;
+
+	printf("Stat: mode:%o\n", stbuf->st_mode);
+
+	clock_gettime(CLOCK_REALTIME, &stbuf->st_ctim);
+	stbuf->st_mtim = stbuf->st_atim = stbuf->st_ctim;
+	
 
 	return 0;
 }
@@ -72,7 +103,7 @@ static void gcfs_getattr(fuse_req_t req, fuse_ino_t ino,
 	if (gcfs_stat(ino, &stbuf) == -1)
 		fuse_reply_err(req, ENOENT);
 	else
-		fuse_reply_attr(req, &stbuf, 1.0);
+		fuse_reply_attr(req, &stbuf, GCFS_FUSE_STAT_TIMEOUT);
 }
 
 static void gcfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
@@ -80,12 +111,23 @@ static void gcfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 {
 	struct stat stbuf = {0};
 
-	(void) fi;
+	int iTaskIndex = GCFS_TASK_FROM_INODE(ino);
+
+	GCFS_Task* pTask = g_sTasks.getTask(iTaskIndex);
+
+	if(to_set & FUSE_SET_ATTR_MODE)
+		pTask->m_sPermissions.m_sMode = attr->st_mode & 0777;
+
+	if(to_set & FUSE_SET_ATTR_UID)
+		pTask->m_sPermissions.m_iUid = attr->st_uid;
+
+	if(to_set & FUSE_SET_ATTR_GID)
+		pTask->m_sPermissions.m_iGid = attr->st_gid;
 
 	if (gcfs_stat(ino, &stbuf) == -1)
 		fuse_reply_err(req, ENOENT);
 	else
-		fuse_reply_attr(req, &stbuf, 1.0);
+		fuse_reply_attr(req, &stbuf, GCFS_FUSE_STAT_TIMEOUT);
 }
 
 static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
@@ -95,8 +137,8 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	GCFS_Task* pTask = NULL;
 	GCFS_Task::File* pFile = NULL;
 	
-	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
-	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+	int iParentIndex = GCFS_INDEX_FROM_INODE(parent);
+	int iTaskIndex = GCFS_TASK_FROM_INODE(parent);
 
 	if ((parent == FUSE_ROOT_ID) && (g_sTasks.getTask(name) != NULL))
 	{
@@ -114,9 +156,9 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_RESULT);
 	}
-	else if(iParentIndex == GCFS_DIR_TASK && strcmp(name, "control")==0)
+	else if(iParentIndex == GCFS_DIR_TASK && g_sTasks.m_mControlFiles.find(name)!=g_sTasks.m_mControlFiles.end())
 	{
-		e.ino = GCFS_CONTROLINODE(iTaskIndex, 0);
+		e.ino = GCFS_CONTROLINODE(iTaskIndex, g_sTasks.m_mControlFiles.find(name)->second);
 	}
 	else if(iParentIndex == GCFS_DIR_CONFIG && (pTask = g_sTasks.getTask(iTaskIndex)) && pTask->m_mConfigNameToIndex.find(name) != pTask->m_mConfigNameToIndex.end()){
 		e.ino = GCFS_CONFIGINODE(iTaskIndex, pTask->m_mConfigNameToIndex[name]);
@@ -167,8 +209,8 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 			     off_t off, struct fuse_file_info *fi)
 {
 	(void) fi;
-	int iParentIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
-	int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
+	int iParentIndex = GCFS_INDEX_FROM_INODE(ino);
+	int iTaskIndex = GCFS_TASK_FROM_INODE(ino);
 
 	std::string buff;
 	dirbuf_add(req, buff, ".", ino);
@@ -187,7 +229,10 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 			dirbuf_add(req, buff, "data", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
 			if(g_sTasks.getTask(iTaskIndex)->m_bCompleted)
 				dirbuf_add(req, buff, "result", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
-			dirbuf_add(req, buff, "control", GCFS_CONFIGINODE(iTaskIndex, 0));
+
+			// Insert control files
+			for(GCFS_TaskManager::ControlFiles::iterator it = g_sTasks.m_mControlFiles.begin(); it != g_sTasks.m_mControlFiles.end() ; ++it)
+				dirbuf_add(req, buff, it->first.c_str(), GCFS_CONFIGINODE(iTaskIndex, it->second));
 			break;
 		}
 		
@@ -239,8 +284,8 @@ static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
 	}
 	else
 	{
-		int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
-		int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
+		int iIndex = GCFS_INDEX_FROM_INODE(ino);
+		int iTaskIndex = GCFS_TASK_FROM_INODE(ino);
 
 		// Use direct-io -> read does not care about file size
 		fi->direct_io = 1;
@@ -282,8 +327,8 @@ static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 	}
 	else
 	{
-		int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
-		int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
+		int iIndex = GCFS_INDEX_FROM_INODE(ino);
+		int iTaskIndex = GCFS_TASK_FROM_INODE(ino);
 
 		if(GCFS_IS_CONFIGINODE(iIndex))
 		{
@@ -317,8 +362,8 @@ static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 	}
 	else
 	{
-		int iIndex = (ino - 2) % GCFS_FUSE_INODES_PER_TASK;
-		int iTaskIndex = (ino - 2) / GCFS_FUSE_INODES_PER_TASK;
+		int iIndex = GCFS_INDEX_FROM_INODE(ino);
+		int iTaskIndex = GCFS_TASK_FROM_INODE(ino);
 
 		if(GCFS_IS_CONFIGINODE(iIndex))
 		{
@@ -338,18 +383,38 @@ static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 	}
 }
 
+static void gcfs_readlink(fuse_req_t req, fuse_ino_t ino)
+{
+	int iIndex = GCFS_INDEX_FROM_INODE(ino);
+	int iTaskIndex = GCFS_TASK_FROM_INODE(ino);
+
+	if(iIndex == GCFS_CONTROL_EXECUTABLE && iTaskIndex < g_sTasks.getTaskCount())
+	{
+		fuse_reply_readlink(req, g_sTasks.getTask(iTaskIndex)->m_sExecutable.m_sValue.c_str());
+		return;
+	}
+
+	fuse_reply_err(req, EEXIST);
+}
+
 static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 		       mode_t mode)
 {
-	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
-	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+	int iParentIndex = GCFS_INDEX_FROM_INODE(parent);
+	int iTaskIndex = GCFS_TASK_FROM_INODE(parent);
 
 	if(parent == FUSE_ROOT_ID)
 	{
 		struct fuse_entry_param e = {0};
 
-		if(g_sTasks.addTask(name))
+		GCFS_Task* pTask = NULL;
+		if(pTask = g_sTasks.addTask(name))
 		{
+			fuse_context * pContext = fuse_get_context();
+			pTask->m_sPermissions.m_sMode = mode;
+			pTask->m_sPermissions.m_iGid = pContext->gid;
+			pTask->m_sPermissions.m_iGid = pContext->uid;
+			
 			e.ino = GCFS_DIRINODE(g_sTasks.getTaskCount()-1, GCFS_DIR_TASK);
 			e.attr_timeout = 1.0;
 			e.entry_timeout = 1.0;
@@ -366,8 +431,8 @@ static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 
 static void gcfs_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
-	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+	int iParentIndex =  GCFS_INDEX_FROM_INODE(parent);
+	int iTaskIndex = GCFS_TASK_FROM_INODE(parent);
 
 	if(parent == FUSE_ROOT_ID)
 	{
@@ -386,8 +451,8 @@ static void gcfs_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name)
 
 static void gcfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
-	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+	int iParentIndex =  GCFS_INDEX_FROM_INODE(parent);
+	int iTaskIndex = GCFS_TASK_FROM_INODE(parent);
 
 	if(parent == FUSE_ROOT_ID)
 	{
@@ -419,8 +484,8 @@ static void gcfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 static void gcfs_create(fuse_req_t req, fuse_ino_t parent, const char *name,
 			mode_t mode, struct fuse_file_info *fi)
 {
-	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
-	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+	int iParentIndex =  GCFS_INDEX_FROM_INODE(parent);
+	int iTaskIndex = GCFS_TASK_FROM_INODE(parent);
 
 	if(iParentIndex == GCFS_DIR_DATA)
 	{
@@ -444,8 +509,8 @@ static void gcfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
 		       mode_t mode, dev_t rdev)
 {
 
-	int iParentIndex = (parent - 2) % GCFS_FUSE_INODES_PER_TASK;
-	int iTaskIndex = (parent - 2) / GCFS_FUSE_INODES_PER_TASK;
+	int iParentIndex =  GCFS_INDEX_FROM_INODE(parent);
+	int iTaskIndex = GCFS_TASK_FROM_INODE(parent);
 
 	if(iParentIndex == GCFS_DIR_DATA && mode & S_IFREG)
 	{
@@ -477,6 +542,11 @@ static void gcfs_statfs(fuse_req_t req, fuse_ino_t ino)
 	stat.f_namemax = 256;
 
 	fuse_reply_statfs(req, &stat);
+}
+
+static void gcfs_access(fuse_req_t req, fuse_ino_t ino, int mask)
+{
+	// We are not using custom access_control. Instead we set 'default_permissions' mount option
 }
 
 static struct fuse_lowlevel_ops gcfs_oper = {};
