@@ -9,6 +9,7 @@
 
 #define FUSE_USE_VERSION 26
 
+#include <fuse.h>
 #include <fuse_lowlevel.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -495,14 +496,33 @@ int init_fuse(int argc, char *argv[])
 	gcfs_oper.create	= gcfs_create;
 	gcfs_oper.mknod	= gcfs_mknod;
 	gcfs_oper.statfs	= gcfs_statfs;
+	gcfs_oper.access	= gcfs_access;
+	gcfs_oper.readlink= gcfs_readlink;
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct fuse_chan *ch;
 	char *mountpoint = NULL;
 	int err = -1;
 
-	if (fuse_parse_cmdline(&args, &mountpoint, NULL, NULL) != -1 && mountpoint &&
-	    (ch = fuse_mount(mountpoint, &args)) != NULL) {
+	if (fuse_parse_cmdline(&args, &mountpoint, NULL, NULL) == -1)
+		return 1;
+
+	if(!mountpoint)
+	{
+		printf("No mount point given!\n");
+		return 1;
+	}
+
+	// Copy permisions from mounting directory
+	struct stat stBuf;
+	stat(mountpoint, &stBuf);
+	g_sConfig.m_sPermissions.m_sMode = stBuf.st_mode;
+
+	fuse_opt_add_arg(&args, "-o");
+	fuse_opt_add_arg(&args, "default_permissions");
+	fuse_opt_add_arg(&args, "-d");
+	
+	if((ch = fuse_mount(mountpoint, &args)) != NULL) {
 		struct fuse_session *se;
 
 		se = fuse_lowlevel_new(&args, &gcfs_oper,
