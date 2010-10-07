@@ -41,6 +41,8 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 	}
 	else if(ino > g_sTasks.m_uiFirstFileInode)
 	{
+		stat(g_sTasks.getInodeFile(ino)->m_sPath.c_str(), stbuf);
+		stbuf->st_ino = ino;
 		stbuf->st_mode = S_IFREG;
 		pPermission = &g_sTasks.getInodeFile(ino)->m_pTask->m_sPermissions;
 	}
