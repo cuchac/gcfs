@@ -79,12 +79,8 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 		stbuf->st_gid = pPermission->m_iGid;
 	}
 
-	printf("First Stat: mode:%o\n", stbuf->st_mode);
-
 	stbuf->st_nlink = 1;
 	stbuf->st_mode &= ~iUmask;
-
-	printf("Stat: mode:%o\n", stbuf->st_mode);
 
 	stbuf->st_mtime = stbuf->st_atime = stbuf->st_ctime = time(NULL);
 
@@ -206,7 +202,6 @@ static int reply_buf_limited(fuse_req_t req, std::string &buff, off_t off, size_
 static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 			     off_t off, struct fuse_file_info *fi)
 {
-	(void) fi;
 	int iParentIndex = GCFS_INDEX_FROM_INODE(ino);
 	int iTaskIndex = GCFS_TASK_FROM_INODE(ino);
 
@@ -408,12 +403,11 @@ static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 		GCFS_Task* pTask = NULL;
 		if(pTask = g_sTasks.addTask(name))
 		{
-			fuse_context * pContext = fuse_get_context();
+			const fuse_ctx * pContext = fuse_req_ctx(req);
 			pTask->m_sPermissions.m_sMode = mode;
 			pTask->m_sPermissions.m_iGid = pContext->gid;
 			pTask->m_sPermissions.m_iUid = pContext->uid;
-			printf("Creating directory with of user: %d, group:%d", pContext->uid, pContext->gid);
-			
+
 			e.ino = GCFS_DIRINODE(g_sTasks.getTaskCount()-1, GCFS_DIR_TASK);
 			e.attr_timeout = 1.0;
 			e.entry_timeout = 1.0;
@@ -576,11 +570,13 @@ int init_fuse(int argc, char *argv[])
 	if (fuse_parse_cmdline(&args, &mountpoint, NULL, NULL) == -1)
 		return 1;
 
+
+	/* // Leave this commented. Better to be crashing on MAC than not havinh help
 	if(!mountpoint)
 	{
 		printf("No mount point given!\n");
 		return 1;
-	}
+	}*/
 
 	// Copy permisions from mounting directory
 	struct stat stBuf;
@@ -595,6 +591,7 @@ int init_fuse(int argc, char *argv[])
 	fuse_opt_add_arg(&args, "default_permissions");
 	fuse_opt_add_arg(&args, "-d");
 	
+	
 	if((ch = fuse_mount(mountpoint, &args)) != NULL) {
 		struct fuse_session *se;
 
@@ -603,7 +600,7 @@ int init_fuse(int argc, char *argv[])
 		if (se != NULL) {
 			if (fuse_set_signal_handlers(se) != -1) {
 				fuse_session_add_chan(se, ch);
-				err = fuse_session_loop(se);
+				err = fuse_session_loop_mt(se);
 				fuse_remove_signal_handlers(se);
 				fuse_session_remove_chan(ch);
 			}
