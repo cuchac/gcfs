@@ -18,8 +18,5 @@ int main(int argc, char *argv[]){
 	g_sTasks.addTask("Test")->m_sPermissions = sDefPerm;
 	g_sTasks.addTask("Test2")->m_sPermissions = sDefPerm;
 
-	g_sConfig.m_sPermissions.m_iUid = getuid();
-	g_sConfig.m_sPermissions.m_iGid = getgid();
-
 	return init_fuse(argc, argv);
 }

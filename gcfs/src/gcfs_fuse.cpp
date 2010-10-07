@@ -411,7 +411,8 @@ static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 			fuse_context * pContext = fuse_get_context();
 			pTask->m_sPermissions.m_sMode = mode;
 			pTask->m_sPermissions.m_iGid = pContext->gid;
-			pTask->m_sPermissions.m_iGid = pContext->uid;
+			pTask->m_sPermissions.m_iUid = pContext->uid;
+			printf("Creating directory with of user: %d, group:%d", pContext->uid, pContext->gid);
 			
 			e.ino = GCFS_DIRINODE(g_sTasks.getTaskCount()-1, GCFS_DIR_TASK);
 			e.attr_timeout = 1.0;
@@ -585,6 +586,10 @@ int init_fuse(int argc, char *argv[])
 	struct stat stBuf;
 	stat(mountpoint, &stBuf);
 	g_sConfig.m_sPermissions.m_sMode = stBuf.st_mode;
+	g_sConfig.m_sPermissions.m_iUid = getuid();
+	g_sConfig.m_sPermissions.m_iGid = getgid();
+	
+	printf("User: %d, Group: %d\n", getuid(), getgid());
 
 	fuse_opt_add_arg(&args, "-o");
 	fuse_opt_add_arg(&args, "default_permissions");
