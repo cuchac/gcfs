@@ -14,7 +14,7 @@ int main(int argc, char *argv[]){
 	
 	g_sConfig.AddService("condor", "test");
 
-	GCFS_Permissions sDefPerm = {0755, 0, 0};
+	GCFS_Permissions sDefPerm = {0755, getuid(), getgid()};
 	g_sTasks.addTask("Test")->m_sPermissions = sDefPerm;
 	g_sTasks.addTask("Test2")->m_sPermissions = sDefPerm;
 
