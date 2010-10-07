@@ -46,8 +46,8 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 	}
 	else
 	{
-		/*if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTasks.getTaskCount())
-			return -1;*/
+		if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTasks.getTaskCount())
+			return -1;
 
 
 		if(GCFS_IS_DIRINODE(iIndex)) // Task dir
@@ -86,9 +86,7 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 
 	printf("Stat: mode:%o\n", stbuf->st_mode);
 
-	clock_gettime(CLOCK_REALTIME, &stbuf->st_ctim);
-	stbuf->st_mtim = stbuf->st_atim = stbuf->st_ctim;
-	
+	stbuf->st_mtime = stbuf->st_atime = stbuf->st_ctime = time(NULL);
 
 	return 0;
 }
