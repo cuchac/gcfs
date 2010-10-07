@@ -76,7 +76,7 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 	{
 		stbuf->st_mode |= pPermission->m_sMode;
 		stbuf->st_uid = pPermission->m_iUid;
-		stbuf->st_uid = pPermission->m_iGid;
+		stbuf->st_gid = pPermission->m_iGid;
 	}
 
 	printf("First Stat: mode:%o\n", stbuf->st_mode);
