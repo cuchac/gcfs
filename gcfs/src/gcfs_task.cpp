@@ -40,6 +40,8 @@ GCFS_Task::File* GCFS_Task::createDataFile(const char * name)
 	tmp->m_iInode = iInode;
 	tmp->m_hFile = open(tmp->m_sPath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR);
 	tmp->m_pTask = this;
+
+	return tmp;
 }
 
 GCFS_Task::File* GCFS_Task::deleteDataFile(const char * name)
