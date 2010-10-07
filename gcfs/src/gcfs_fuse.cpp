@@ -409,7 +409,7 @@ static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 		if(pTask = g_sTasks.addTask(name))
 		{
 			const fuse_ctx * pContext = fuse_req_ctx(req);
-			pTask->m_sPermissions.m_sMode = mode;
+			pTask->m_sPermissions.m_sMode = mode & 0777;
 			pTask->m_sPermissions.m_iGid = pContext->gid;
 			pTask->m_sPermissions.m_iUid = pContext->uid;
 
@@ -586,7 +586,7 @@ int init_fuse(int argc, char *argv[])
 	// Copy permisions from mounting directory
 	struct stat stBuf;
 	stat(mountpoint, &stBuf);
-	g_sConfig.m_sPermissions.m_sMode = stBuf.st_mode;
+	g_sConfig.m_sPermissions.m_sMode = stBuf.st_mode & 0777;
 	g_sConfig.m_sPermissions.m_iUid = getuid();
 	g_sConfig.m_sPermissions.m_iGid = getgid();
 	
