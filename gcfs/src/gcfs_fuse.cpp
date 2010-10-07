@@ -46,26 +46,26 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 	}
 	else
 	{
-		if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTasks.getTaskCount())
-			return -1;
+		/*if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTasks.getTaskCount())
+			return -1;*/
 
 
-		if(iIndex < GCFS_DIR_LAST) // Task dir
+		if(GCFS_IS_DIRINODE(iIndex)) // Task dir
 		{
 			stbuf->st_mode = S_IFDIR;
 		}
-		else if(iIndex == GCFS_CONTROLINODE(0, GCFS_CONTROL_EXECUTABLE))
+		else if(iIndex == GCFS_CONTROL_EXECUTABLE)
 		{
 			stbuf->st_mode = S_IFLNK;
 		}
-		else if(iIndex >= GCFS_DIR_LAST)
+		else if(GCFS_IS_CONFIGINODE(iIndex) || GCFS_IS_CONTROLINODE(iIndex))
 		{
 			stbuf->st_mode = S_IFREG;
 			iUmask = 07000 | S_IXGRP | S_IXUSR | S_IXOTH; // Remove execute permissions
 		}
 		else
 		{
-			printf("Error stat inode: %d\n", (int)ino);
+			printf("Error stat inode: %d, \n", (int)ino);
 			return -1;
 		}
 
@@ -158,7 +158,7 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	}
 	else if(iParentIndex == GCFS_DIR_TASK && g_sTasks.m_mControlFiles.find(name)!=g_sTasks.m_mControlFiles.end())
 	{
-		e.ino = GCFS_CONTROLINODE(iTaskIndex, g_sTasks.m_mControlFiles.find(name)->second);
+		e.ino = GCFS_CONTROLINODE(iTaskIndex, GCFS_CONTROL_FIRST + g_sTasks.m_mControlFiles.find(name)->second);
 	}
 	else if(iParentIndex == GCFS_DIR_CONFIG && (pTask = g_sTasks.getTask(iTaskIndex)) && pTask->m_mConfigNameToIndex.find(name) != pTask->m_mConfigNameToIndex.end()){
 		e.ino = GCFS_CONFIGINODE(iTaskIndex, pTask->m_mConfigNameToIndex[name]);
@@ -232,7 +232,7 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 
 			// Insert control files
 			for(GCFS_TaskManager::ControlFiles::iterator it = g_sTasks.m_mControlFiles.begin(); it != g_sTasks.m_mControlFiles.end() ; ++it)
-				dirbuf_add(req, buff, it->first.c_str(), GCFS_CONFIGINODE(iTaskIndex, it->second));
+				dirbuf_add(req, buff, it->first.c_str(), GCFS_CONFIGINODE(iTaskIndex, GCFS_CONTROL_FIRST + it->second));
 			break;
 		}
 		

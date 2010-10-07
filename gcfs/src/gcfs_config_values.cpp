@@ -33,7 +33,7 @@ bool GCFS_ConfigInt::PrintValue(std::string& buff)
 
 bool GCFS_ConfigString::SetValue(const char * sValue)
 {
-	m_sValue = sValue;
+	m_sValue = trimStr(sValue);
 
 	return true;
 }

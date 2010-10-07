@@ -22,7 +22,7 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_mConfigNameToIndex["processes"] = 1;
 	m_mConfigNameToIndex["timeout"] = 2;
 	m_mConfigNameToIndex["service"] = 3;
-	m_mConfigNameToIndex["executable"] = 3;
+	m_mConfigNameToIndex["executable"] = 4;
 }
 
 GCFS_Task::File* GCFS_Task::createDataFile(const char * name)
