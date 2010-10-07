@@ -107,16 +107,19 @@ static void gcfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 
 	int iTaskIndex = GCFS_TASK_FROM_INODE(ino);
 
-	GCFS_Task* pTask = g_sTasks.getTask(iTaskIndex);
+	if(ino < g_sTasks.m_uiFirstFileInode)
+	{
+		GCFS_Task* pTask = g_sTasks.getTask(iTaskIndex);
 
-	if(to_set & FUSE_SET_ATTR_MODE)
-		pTask->m_sPermissions.m_sMode = attr->st_mode & 0777;
+		if(to_set & FUSE_SET_ATTR_MODE)
+			pTask->m_sPermissions.m_sMode = attr->st_mode & 0777;
 
-	if(to_set & FUSE_SET_ATTR_UID)
-		pTask->m_sPermissions.m_iUid = attr->st_uid;
+		if(to_set & FUSE_SET_ATTR_UID)
+			pTask->m_sPermissions.m_iUid = attr->st_uid;
 
-	if(to_set & FUSE_SET_ATTR_GID)
-		pTask->m_sPermissions.m_iGid = attr->st_gid;
+		if(to_set & FUSE_SET_ATTR_GID)
+			pTask->m_sPermissions.m_iGid = attr->st_gid;
+	}
 
 	if (gcfs_stat(ino, &stbuf) == -1)
 		fuse_reply_err(req, ENOENT);
