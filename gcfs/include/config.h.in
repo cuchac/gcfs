@@ -2,5 +2,6 @@
 #define __CONFIG_H
 
 #cmakedefine       GCFS_MODULE_CONDOR
+#cmakedefine       GCFS_MODULE_SAGA
 
 #endif /*__CONFIG_H*/
