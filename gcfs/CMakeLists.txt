@@ -35,10 +35,11 @@ add_subdirectory(lib)
 
 # Append selected modules as dependency and link app with them
 get_target_property(GCFS_MODULES gcfs MODULES)
-IF(NOT (GCFS_MODULES STREQUAL ""))
-	add_dependencies(gcfs ${GCFS_MODULES})
-	target_link_libraries(gcfs ${GCFS_MODULES})
-ENDIF(NOT (GCFS_MODULES STREQUAL ""))
+message(STATUS "GCFS_MODULES : ${GCFS_MODULES}")
+foreach(module ${GCFS_MODULES})
+	add_dependencies(gcfs ${module})
+	target_link_libraries(gcfs ${module})
+endforeach(module)
 	
 # Generate configuraton header with selected modules
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
