@@ -53,6 +53,8 @@ GCFS_ConfigChoice::GCFS_ConfigChoice(const char *sName, const char *sDefault, ch
 
 	if(sDefault)
 		this->SetValue(sDefault);
+	else
+		m_iValue = 0;
 };
 
 bool GCFS_ConfigChoice::SetValue(const char * sValue)

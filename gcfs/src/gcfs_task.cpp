@@ -8,7 +8,7 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_iMemory("memory", "1024"),
 	m_iProcesses("processes", "1"),
 	m_iTimeout("timeout", "3600"),
-	m_iService("service", NULL, &g_sConfig.m_vServiceNames),
+	m_iService("service", 0, &g_sConfig.m_vServiceNames),
 	m_sExecutable("executable", "./data/executable"),
 	m_eStatus(eNew),
 	m_sPermissions()
