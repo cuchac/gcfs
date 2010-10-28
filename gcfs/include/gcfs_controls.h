@@ -30,7 +30,7 @@ public:
 	virtual	bool	read(GCFS_Task* pTask, std::string &buff);
 	 
 private:
-	std::string 	trimStr(const std::string& Src, const std::string& c);
+	static const char *	statuses[];
 };
 
 
@@ -44,10 +44,11 @@ private:
 
 private:
 	enum eActions {
-		START,
-		START_AND_WAIT,
-		ABORT,
-		SUSPEND,
+		eStart = 0,
+		eStartAndWait,
+		eWait,
+		eAbort,
+		eSuspend,
 	};
 
 public:

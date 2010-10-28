@@ -28,3 +28,8 @@ GCFS_Service*	GCFS_Service::createService(const char * sModule, const char * sNa
 	return NULL;
 
 }
+
+GCFS_Task::Status	GCFS_Service::getTaskStatus(GCFS_Task* pTask)
+{
+	return pTask->m_eStatus;
+}

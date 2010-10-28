@@ -1,10 +1,10 @@
 #ifndef GCFS_SERVICE_H
 #define GCFS_SERVICE_H
 
+#include "gcfs_task.h"
+
 #include <map>
 #include <string>
-
-class GCFS_Task;
 
 #ifndef INCLUDED_SimpleIni_h
 class CSimpleIniA;
@@ -13,21 +13,23 @@ class CSimpleIniA;
 class GCFS_Service
 {
 public:
-									GCFS_Service(const char * sName):m_sName(sName){};
+										GCFS_Service(const char * sName):m_sName(sName){};
 
-	bool							configure(CSimpleIniA * pConfig);
+	bool								configure(CSimpleIniA * pConfig);
 
 public:
 	// Factory of modules instances
-	static	GCFS_Service*	createService(const char * sModule, const char * sName);
+	static	GCFS_Service*		createService(const char * sModule, const char * sName);
 
 public:
 	// Public module API for task submission
-	virtual	bool				submitTask(GCFS_Task* pTask) = 0;
-	virtual	bool				getTaskResult(GCFS_Task* pTask) = 0;
+	virtual	bool					submitTask(GCFS_Task* pTask) = 0;
+	virtual	bool					waitForTask(GCFS_Task* pTask) = 0;
+
+	virtual	GCFS_Task::Status	getTaskStatus(GCFS_Task* pTask);
 
 public:
-	std::string					m_sName;
+	std::string						m_sName;
 
 };
 

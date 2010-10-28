@@ -153,7 +153,7 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_DATA);
 	}
-	else if(iParentIndex == GCFS_DIR_TASK && (pTask = g_sTasks.getTask(iTaskIndex)) && pTask->m_bCompleted && strcmp(name, "result")==0)
+	else if(iParentIndex == GCFS_DIR_TASK && (pTask = g_sTasks.getTask(iTaskIndex)) && pTask->isFinished() && strcmp(name, "result")==0)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_RESULT);
 	}
@@ -227,7 +227,7 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 			dirbuf_add(req, buff, "..", FUSE_ROOT_ID);
 			dirbuf_add(req, buff, "config", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
 			dirbuf_add(req, buff, "data", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
-			if(g_sTasks.getTask(iTaskIndex)->m_bCompleted)
+			if(g_sTasks.getTask(iTaskIndex)->isFinished())
 				dirbuf_add(req, buff, "result", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
 
 			// Insert control files

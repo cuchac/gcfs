@@ -23,4 +23,6 @@ extern GCFS_Config g_sConfig;
 // Tasks
 extern GCFS_TaskManager g_sTasks;
 
+#define ARRAYSIZE(a) (sizeof(a)/sizeof((a)[0]))
+
 #endif /*__GCFS__*/ 
