@@ -1,6 +1,6 @@
 add_library(gcfs_saga gcfs_servicesaga.cpp)
 
-#target_link_libraries(gcfs_saga "saga_adaptor_condor_job")
+target_link_libraries(gcfs_saga "saga_adaptor_condor_job")
 
 option(GCFS_MODULE_SAGA "Add support for SAGA grid control library")
 

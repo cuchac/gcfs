@@ -9,6 +9,8 @@
 #include <map>
 #include <sys/types.h>
 
+class GCFS_Control;
+
 // Task Configuration
 class GCFS_Task {
 
@@ -93,9 +95,15 @@ private:
 
 // Control files
 public:
-	typedef std::map<std::string,int> ControlFiles;
+	size_t								getControlCount();
+
+	GCFS_Control*						getControl(int iIndex);
+	GCFS_Control*						getControl(const char * sName);
+	int									getControlIndex(const char * sName);
 	
-	ControlFiles						m_mControlFiles;
+private:
+	std::vector<GCFS_Control*>		m_vControls;
+	std::map<std::string,int>		m_mControlNames;
 };
 
 #endif // GCFS_TASK_H

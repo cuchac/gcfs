@@ -13,6 +13,7 @@ int main(int argc, char *argv[]){
 	g_sConfig.loadConfig();
 	
 	g_sConfig.AddService("condor", "test");
+	g_sConfig.AddService("saga", "saga");
 
 	GCFS_Permissions sDefPerm = {0755, getuid(), getgid()};
 	g_sTasks.addTask("Test")->m_sPermissions = sDefPerm;

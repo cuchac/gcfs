@@ -16,6 +16,8 @@
 #define GCFS_CONTROL_STATE					6
 #define GCFS_CONTROL_LAST					7
 
+#define GCFS_CONFIG_FIRST					7
+
 #define GCFS_INDEX_FROM_INODE(inode)		((inode - 2) % GCFS_FUSE_INODES_PER_TASK)
 #define GCFS_TASK_FROM_INODE(inode)		 	((inode - 2) / GCFS_FUSE_INODES_PER_TASK)
 

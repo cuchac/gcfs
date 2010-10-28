@@ -1,8 +1,6 @@
 #ifndef __GCFS_CONFIG_VALUES__
 #define __GCFS_CONFIG_VALUES__
 
-#include "gcfs.h"
-
 #include <string>
 #include <vector>
 #include <map>
@@ -12,10 +10,10 @@ class GCFS_ConfigValue
 public:
 						GCFS_ConfigValue(const char *sName):m_sName(sName){};
 
-	virtual	bool	SetValue(const char * sValue) = 0;
-	virtual	bool	PrintValue(std::string &buff) = 0;
+	virtual	bool				SetValue(const char * sValue) = 0;
+	virtual	bool				PrintValue(std::string &buff) = 0;
 
-	std::string 	trimStr(const std::string& Src, const std::string& c = " \r\n");
+	static 	std::string 	trimStr(const std::string& Src, const std::string& c = " \r\n");
 
 public:
 	const char * 	m_sName;
@@ -47,9 +45,11 @@ public:
 
 class GCFS_ConfigChoice: public GCFS_ConfigValue
 {
-	typedef std::vector<std::string> choices_t;
 public:
-						GCFS_ConfigChoice(const char *sName, const char *sDefault, choices_t & vChoices):GCFS_ConfigValue(sName),m_vChoices(vChoices){this->SetValue(sDefault);};
+	typedef std::vector<std::string> choices_t;
+	
+public:
+						GCFS_ConfigChoice(const char* sName, const char* sDefault = NULL, GCFS_ConfigChoice::choices_t* pvChoices = NULL);
 
 	bool				SetValue(const char * sValue);
 	bool				PrintValue(std::string &buff);

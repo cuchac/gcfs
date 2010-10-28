@@ -2,12 +2,13 @@
 #include "gcfs_config.h"
 #include <fcntl.h>
 #include <stdio.h>
+#include <gcfs_controls.h>
 
 GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_iMemory("memory", "1024"),
 	m_iProcesses("processes", "1"),
 	m_iTimeout("timeout", "3600"),
-	m_iService("service", "", g_sConfig.m_vServiceNames),
+	m_iService("service", NULL, &g_sConfig.m_vServiceNames),
 	m_sExecutable("executable", "./data/executable"),
 	m_bCompleted(false),
 	m_sPermissions()
@@ -105,9 +106,14 @@ GCFS_Task::Files::const_iterator GCFS_Task::getResultFiles()
 
 GCFS_TaskManager::GCFS_TaskManager():m_uiFirstFileInode(-1)
 {
-	m_mControlFiles["control"] = 0;
-	m_mControlFiles["executable"] = 1;
-	m_mControlFiles["status"] = 2;
+
+	m_vControls.push_back(new GCFS_ControlControl());
+	m_vControls.push_back(new GCFS_ControlStatus());
+	m_vControls.push_back(new GCFS_ControlStatus());
+	
+	m_mControlNames["control"] = 0;
+	m_mControlNames["executable"] = 1;
+	m_mControlNames["status"] = 2;
 }
 
 GCFS_Task* GCFS_TaskManager::addTask(const char * sName)
@@ -180,4 +186,33 @@ GCFS_Task::File* GCFS_TaskManager::getInodeFile(int iInode)
 		return it->second;
 	else
 		return NULL;
+}
+
+// Control files
+size_t GCFS_TaskManager::getControlCount()
+{
+	return (int)m_vControls.size();
+}
+
+GCFS_Control* GCFS_TaskManager::getControl(int iIndex)
+{
+	return m_vControls[iIndex];
+}
+
+GCFS_Control* GCFS_TaskManager::getControl(const char * sName)
+{
+	std::map<std::string, int>::iterator it;
+	if((it = m_mControlNames.find(sName)) != m_mControlNames.end())
+		return m_vControls[it->second];
+	else
+		return NULL;
+}
+
+int GCFS_TaskManager::getControlIndex(const char * sName)
+{
+	std::map<std::string, int>::iterator it;
+	if((it = m_mControlNames.find(sName)) != m_mControlNames.end())
+		return it->second;
+	else
+		return -1;
 }

@@ -23,6 +23,7 @@
 #include <gcfs_task.h>
 #include <gcfs_config.h>
 #include <time.h>
+#include <gcfs_controls.h>
 
 static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 {
@@ -135,6 +136,7 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 
 	GCFS_Task* pTask = NULL;
 	GCFS_Task::File* pFile = NULL;
+	int iIndex = -1;
 	
 	int iParentIndex = GCFS_INDEX_FROM_INODE(parent);
 	int iTaskIndex = GCFS_TASK_FROM_INODE(parent);
@@ -155,9 +157,9 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_RESULT);
 	}
-	else if(iParentIndex == GCFS_DIR_TASK && g_sTasks.m_mControlFiles.find(name)!=g_sTasks.m_mControlFiles.end())
+	else if(iParentIndex == GCFS_DIR_TASK && ((iIndex = g_sTasks.getControlIndex(name))) >= 0)
 	{
-		e.ino = GCFS_CONTROLINODE(iTaskIndex, GCFS_CONTROL_FIRST + g_sTasks.m_mControlFiles.find(name)->second);
+		e.ino = GCFS_CONTROLINODE(iTaskIndex, GCFS_CONTROL_FIRST + iIndex);
 	}
 	else if(iParentIndex == GCFS_DIR_CONFIG && (pTask = g_sTasks.getTask(iTaskIndex)) && pTask->m_mConfigNameToIndex.find(name) != pTask->m_mConfigNameToIndex.end()){
 		e.ino = GCFS_CONFIGINODE(iTaskIndex, pTask->m_mConfigNameToIndex[name]);
@@ -229,8 +231,8 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 				dirbuf_add(req, buff, "result", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
 
 			// Insert control files
-			for(GCFS_TaskManager::ControlFiles::iterator it = g_sTasks.m_mControlFiles.begin(); it != g_sTasks.m_mControlFiles.end() ; ++it)
-				dirbuf_add(req, buff, it->first.c_str(), GCFS_CONFIGINODE(iTaskIndex, GCFS_CONTROL_FIRST + it->second));
+			for(int iIndex = 0; iIndex < g_sTasks.getControlCount(); iIndex++)
+				dirbuf_add(req, buff, g_sTasks.getControl(iIndex)->m_sName, GCFS_CONFIGINODE(iTaskIndex, GCFS_CONTROL_FIRST + iIndex));
 			break;
 		}
 		
@@ -271,6 +273,8 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
 			  struct fuse_file_info *fi)
 {
+	fi->fh = NULL;
+	
 	if(ino > g_sTasks.m_uiFirstFileInode)
 	{
 		GCFS_Task::File *pFile = g_sTasks.getInodeFile(ino);
@@ -289,13 +293,20 @@ static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
 		fi->direct_io = 1;
 
 		if (iIndex < GCFS_DIR_LAST)
+		{
 			fuse_reply_err(req, EISDIR);
-		/*else if ((fi->flags & 3) != O_RDONLY)
-			fuse_reply_err(req, EACCES);*/
+		}
 		else if(GCFS_IS_CONFIGINODE(iIndex))
 		{
-			int iConfigIndex = ino - GCFS_CONFIGINODE(iTaskIndex, 0);
+			int iConfigIndex = iIndex - GCFS_CONFIG_FIRST;
 			fi->fh = (uint64_t)g_sTasks.getTask(iTaskIndex)->m_vConfigValues[iConfigIndex];
+
+			fuse_reply_open(req, fi);
+		}
+		else if(GCFS_IS_CONTROLINODE(iIndex))
+		{
+			int iControlIndex = iIndex - GCFS_CONTROL_FIRST;
+			fi->fh = (uint64_t)g_sTasks.getControl(iControlIndex);
 
 			fuse_reply_open(req, fi);
 		}
@@ -338,6 +349,16 @@ static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 
 			reply_buf_limited(req, buff, off, size);
 		}
+		else if(GCFS_IS_CONTROLINODE(iIndex))
+		{
+			GCFS_Control * pControl = (GCFS_Control *) fi->fh;
+
+			std::string buff;
+			pControl->read(g_sTasks.getTask(iTaskIndex), buff);
+			buff += "\n";
+
+			reply_buf_limited(req, buff, off, size);
+		}
 		else
 		{
 			printf("Error read: inode: %d\n", (int)ino);
@@ -368,6 +389,15 @@ static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 			GCFS_ConfigValue * pValue = (GCFS_ConfigValue *) fi->fh;
 
 			if(pValue->SetValue(buf))
+				fuse_reply_write(req, size);
+			else
+				fuse_reply_err(req, EINVAL);
+		}
+		else if(GCFS_IS_CONTROLINODE(iIndex))
+		{
+			GCFS_Control * pControl = (GCFS_Control *) fi->fh;
+
+			if(pControl->write(g_sTasks.getTask(iTaskIndex), buf))
 				fuse_reply_write(req, size);
 			else
 				fuse_reply_err(req, EINVAL);
