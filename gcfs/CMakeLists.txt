@@ -35,7 +35,7 @@ add_subdirectory(lib)
 
 # Append selected modules as dependency and link app with them
 get_target_property(GCFS_MODULES gcfs MODULES)
-message(STATUS "GCFS_MODULES : ${GCFS_MODULES}")
+
 foreach(module ${GCFS_MODULES})
 	add_dependencies(gcfs ${module})
 	target_link_libraries(gcfs ${module})
