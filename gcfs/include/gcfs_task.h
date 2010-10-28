@@ -13,15 +13,27 @@ class GCFS_Control;
 
 // Task Configuration
 class GCFS_Task {
+	// Define task statuses
+public:
+	typedef enum {
+		eNew = 0, // initial
+		eSubmitted, // After start
+		eRunning, // Really physically running
+		eAborted, // User aborted
+		eFailed, // Failed
+		eFinished, // succesfully finished
+	} Status;
 
 public:
 													GCFS_Task(const char * sName);
 
 public:
+	bool 											isFinished();
+	
+public:
 	std::string									m_sName;
 
-	bool											m_bCompleted;
-
+	Status										m_eStatus;
 	
 // Task Configuration Values
 public:

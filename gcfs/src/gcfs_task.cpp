@@ -10,7 +10,7 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_iTimeout("timeout", "3600"),
 	m_iService("service", NULL, &g_sConfig.m_vServiceNames),
 	m_sExecutable("executable", "./data/executable"),
-	m_bCompleted(false),
+	m_eStatus(eNew),
 	m_sPermissions()
 {
 	m_vConfigValues.push_back(&m_iMemory);
@@ -24,6 +24,11 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_mConfigNameToIndex["timeout"] = 2;
 	m_mConfigNameToIndex["service"] = 3;
 	m_mConfigNameToIndex["executable"] = 4;
+}
+
+bool GCFS_Task::isFinished()
+{
+	return m_eStatus == GCFS_Task::eFinished || m_eStatus == GCFS_Task::eAborted || m_eStatus == GCFS_Task::eFailed;
 }
 
 GCFS_Task::File* GCFS_Task::createDataFile(const char * name)
