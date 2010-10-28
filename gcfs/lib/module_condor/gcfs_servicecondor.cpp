@@ -11,6 +11,6 @@ bool GCFS_ServiceCondor::submitTask(GCFS_Task* pTask)
 {
 }
 
-bool GCFS_ServiceCondor::getTaskResult(GCFS_Task* pTask)
+bool GCFS_ServiceCondor::waitForTask(GCFS_Task* pTask)
 {
 }

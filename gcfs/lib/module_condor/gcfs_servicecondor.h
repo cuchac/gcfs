@@ -11,7 +11,7 @@ public:
 public:
 	// Public module API for task submission
 	virtual	bool				submitTask(GCFS_Task* pTask);
-	virtual	bool				getTaskResult(GCFS_Task* pTask);
+	virtual	bool				waitForTask(GCFS_Task* pTask);
 };
 
 #endif // GCFS_SERVICECONDOR_H

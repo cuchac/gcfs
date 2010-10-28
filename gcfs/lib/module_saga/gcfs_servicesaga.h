@@ -10,8 +10,9 @@ public:
 									GCFS_ServiceSaga(const char * sName);
 									
 public:
-    virtual bool getTaskResult(GCFS_Task* pTask);
-    virtual bool submitTask(GCFS_Task* pTask);
+	virtual bool 				submitTask(GCFS_Task* pTask);
+	virtual bool 				waitForTask(GCFS_Task* pTask);
+    
 };
 
 #endif // GCFS_SERVICESAGA_H
