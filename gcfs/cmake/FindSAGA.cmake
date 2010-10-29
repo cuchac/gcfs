@@ -60,12 +60,21 @@ if (SAGA_INCLUDE_DIR)
 
     # search for library
 
-    find_library(SAGA_LIBRARIES
+    find_library(SAGA_LIBRARIES_CORE
                  NAMES "libsaga_core.so"
                  PATHS "/usr/local"
                        "/usr"
                  ENV SAGA_ROOTDIR
                  PATH_SUFFIXES "lib")
+	 
+	find_library(SAGA_LIBRARIES_JOB
+                 NAMES "libsaga_package_job.so"
+                 PATHS "/usr/local"
+                       "/usr"
+                 ENV SAGA_ROOTDIR
+                 PATH_SUFFIXES "lib")
+	
+	SET(SAGA_LIBRARIES ${SAGA_LIBRARIES_CORE} ${SAGA_LIBRARIES_JOB})
 
 endif (SAGA_INCLUDE_DIR)
 
