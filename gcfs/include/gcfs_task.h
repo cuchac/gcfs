@@ -34,6 +34,8 @@ public:
 	std::string									m_sName;
 
 	Status										m_eStatus;
+
+	void*											m_pServiceData; // Data space for service
 	
 // Task Configuration Values
 public:
