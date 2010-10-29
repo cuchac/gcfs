@@ -49,7 +49,7 @@ find_path(SAGA_INCLUDE_DIR
 
 if (SAGA_INCLUDE_DIR)
 
-    set(SAGA_INCLUDE_DIR "${SAGA_INCLUDE_DIR}")
+    set(SAGA_INCLUDE_DIR "${SAGA_INCLUDE_DIR}/saga/")
 
     # retrieve version information from the header
 

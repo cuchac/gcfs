@@ -4,9 +4,10 @@ if (GCFS_MODULE_SAGA)
 
 	add_library(gcfs_saga gcfs_servicesaga.cpp)
 
-	target_link_libraries(gcfs_saga "saga_adaptor_condor_job")
+	FIND_PACKAGE(SAGA REQUIRED)
 
-	FIND_PACKAGE(SAGA)
+	target_link_libraries(gcfs_saga ${SAGA_LIBRARIES})
+	include_directories(${SAGA_INCLUDE_DIR})
 	
 	get_target_property(MODULES gcfs MODULES)
 	LIST(APPEND MODULES "gcfs_saga")
