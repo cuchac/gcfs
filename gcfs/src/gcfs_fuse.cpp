@@ -167,6 +167,9 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	else if(iParentIndex == GCFS_DIR_DATA && (pTask = g_sTasks.getTask(iTaskIndex)) &&  pTask->m_mDataFiles.find(name) != pTask->m_mDataFiles.end()){
 		e.ino = pTask->m_mDataFiles[name]->m_iInode;
 	}
+	else if(iParentIndex == GCFS_DIR_RESULT && (pTask = g_sTasks.getTask(iTaskIndex)) &&  pTask->m_mResultFiles.find(name) != pTask->m_mResultFiles.end()){
+		e.ino = pTask->m_mResultFiles[name]->m_iInode;
+	}
 	else
 	{
 		printf("Error lookup: %s, parent: %d\n", name, (int)parent);
@@ -256,8 +259,9 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 		case GCFS_DIR_RESULT:
 		{
 			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
-			/*for(int iIndex = 0; iIndex < g_sTasks.Get(iTaskIndex)->m_vIndexToName.size(); iIndex++)
-				dirbuf_add(req, &b, g_sTasks.Get(iTaskIndex)->m_vIndexToName[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));*/
+			GCFS_Task::Files & mFiles = g_sTasks.getTask(iTaskIndex)->m_mResultFiles;
+			for(GCFS_Task::Files::iterator it = mFiles.begin(); it != mFiles.end() ; ++it)
+				dirbuf_add(req, buff, it->first.c_str(), it->second->m_iInode);
 			break;
 		}
 		

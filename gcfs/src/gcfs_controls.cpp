@@ -19,6 +19,7 @@ const char * GCFS_ControlStatus::statuses[] = {
 	"aborted",
 	"failed",
 	"finished",
+	"suspended",
 };
 
 bool GCFS_ControlStatus::read(GCFS_Task* pTask, std::string &buff)

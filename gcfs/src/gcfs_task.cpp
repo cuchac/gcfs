@@ -97,6 +97,10 @@ GCFS_Task::File* GCFS_Task::createResultFile(const char * name)
 	tmp->m_iInode = iInode;
 	tmp->m_hFile = creat(tmp->m_sPath.c_str(), S_IRUSR | S_IWUSR);
 	tmp->m_pTask = this;
+
+	chown(tmp->m_sPath.c_str(), m_sPermissions.m_iUid, m_sPermissions.m_iGid);
+
+	return tmp;
 }
 
 GCFS_Task::File* GCFS_Task::deleteResultFile(const char * name)
