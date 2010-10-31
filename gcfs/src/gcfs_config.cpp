@@ -26,6 +26,7 @@ bool GCFS_Config::loadConfig()
 		ini.LoadFile((sHomePath+GCFS_CONFIG_CONFIGFILE).c_str());
 
 		m_sDataDir = ini.GetValue("Global", "dataPath", (sHomePath+GCFS_CONFIG_DATADIR).c_str());
+		m_sDataDir += "/";
 
 		// Ensure directory exists
 		mkdirRecursive(m_sDataDir.c_str());
@@ -99,11 +100,11 @@ bool GCFS_Config::mkdirRecursive(const char *path)
                 if(*p == '/') {
                         *p = '\0';
                         if(access(opath, F_OK))
-                                mkdir(opath, S_IRWXU);
+                                mkdir(opath, S_IRWXU | S_IRWXG | S_IRWXO);
                         *p = '/';
                 }
         if(access(opath, F_OK))         /* if path is not terminated with / */
-                mkdir(opath, S_IRWXU);
+                mkdir(opath, S_IRWXU | S_IRWXG | S_IRWXO);
 }
 
 // Service management
