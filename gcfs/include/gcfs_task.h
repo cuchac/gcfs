@@ -22,6 +22,7 @@ public:
 		eAborted, // User aborted
 		eFailed, // Failed
 		eFinished, // succesfully finished
+		eSuspended, // suspended
 	} Status;
 
 public:
@@ -29,6 +30,7 @@ public:
 
 public:
 	bool 											isFinished();
+	bool 											isSubmited();
 	
 public:
 	std::string									m_sName;
@@ -44,6 +46,7 @@ public:
 	GCFS_ConfigInt 							m_iTimeout;
 	GCFS_ConfigChoice							m_iService;
 	GCFS_ConfigString							m_sExecutable;
+	GCFS_ConfigString							m_sArguments;
 
 // Mapping of confg values for dynamic access
 	std::vector<GCFS_ConfigValue*>		m_vConfigValues;
@@ -66,6 +69,8 @@ public:
 	File*												createResultFile(const char * name);
 	File*												deleteResultFile(const char * name);
 	Files::const_iterator 						getResultFiles();
+
+	File*												getExecutableFile();
 	
 // Data and result files mapping from name to inode number
 public:
