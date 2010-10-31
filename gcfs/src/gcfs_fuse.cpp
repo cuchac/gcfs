@@ -153,7 +153,7 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_DATA);
 	}
-	else if(iParentIndex == GCFS_DIR_TASK && (pTask = g_sTasks.getTask(iTaskIndex)) && pTask->isFinished() && strcmp(name, "result")==0)
+	else if(iParentIndex == GCFS_DIR_TASK && (pTask = g_sTasks.getTask(iTaskIndex)) && pTask->isSubmited() && strcmp(name, "result")==0)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_RESULT);
 	}
@@ -605,7 +605,6 @@ int init_fuse(int argc, char *argv[])
 	if (fuse_parse_cmdline(&args, &mountpoint, NULL, NULL) == -1)
 		return 1;
 
-
 	/* // Leave this commented. Better to be crashing on MAC than not havinh help
 	if(!mountpoint)
 	{
@@ -620,6 +619,10 @@ int init_fuse(int argc, char *argv[])
 	g_sConfig.m_sPermissions.m_iUid = getuid();
 	g_sConfig.m_sPermissions.m_iGid = getgid();
 	
+	char * psRealMontPath = realpath(mountpoint, NULL);
+	g_sConfig.m_sMountDir = psRealMontPath;
+	free(psRealMontPath);
+	
 	printf("User: %d, Group: %d\n", getuid(), getgid());
 
 	fuse_opt_add_arg(&args, "-o");
@@ -629,6 +632,9 @@ int init_fuse(int argc, char *argv[])
 	
 	if((ch = fuse_mount(mountpoint, &args)) != NULL) {
 		struct fuse_session *se;
+
+		// Chdir to data directory to avoid "access denied" errors when CWD is not accessible by regular users
+		chdir(g_sConfig.m_sDataDir.c_str());
 
 		se = fuse_lowlevel_new(&args, &gcfs_oper,
 				       sizeof(gcfs_oper), NULL);
