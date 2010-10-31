@@ -23,6 +23,7 @@ public:
 
 public:
 	std::string						m_sDataDir;
+	std::string						m_sMountDir;
 
 private:
 	bool								getHomePath(std::string &buffer);
