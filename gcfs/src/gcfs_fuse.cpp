@@ -392,6 +392,7 @@ static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 		{
 			GCFS_ConfigValue * pValue = (GCFS_ConfigValue *) fi->fh;
 
+			((char*)buf)[size] = 0;
 			if(pValue->SetValue(buf))
 				fuse_reply_write(req, size);
 			else
@@ -401,6 +402,7 @@ static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 		{
 			GCFS_Control * pControl = (GCFS_Control *) fi->fh;
 
+			((char*)buf)[size] = 0;
 			if(pControl->write(g_sTasks.getTask(iTaskIndex), buf))
 				fuse_reply_write(req, size);
 			else
