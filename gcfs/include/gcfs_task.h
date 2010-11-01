@@ -67,7 +67,7 @@ public:
 	bool												deleteDataFile(const char * name);
 	File* 											getDataFile(const char * name);
 	Files::const_iterator 						getDataFiles();
-	File*												createResultFile(const char * name);
+	File*												createResultFile(const char* name, bool bCreate = true);
 	bool												deleteResultFile(const char * name);
 	File* 											getResultFile(const char * name);
 	Files::const_iterator 						getResultFiles();
@@ -109,7 +109,7 @@ public:
 
 	GCFS_Task::File*					getInodeFile(int iInode);
 	
-	GCFS_Task::File* 					createFile();
+	GCFS_Task::File* 					createFile(bool bCreate = true);
 	
 	unsigned int						m_uiFirstFileInode;
 

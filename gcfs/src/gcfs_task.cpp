@@ -93,14 +93,14 @@ GCFS_Task::Files::const_iterator GCFS_Task::getDataFiles()
 	return m_mDataFiles.begin();
 }
 
-GCFS_Task::File* GCFS_Task::createResultFile(const char * name)
+GCFS_Task::File* GCFS_Task::createResultFile(const char * name, bool bCreate)
 {
 	File *pFile;
 
 	if(pFile = getResultFile(name))
 		return pFile;
 
-	pFile = g_sTasks.createFile();
+	pFile = g_sTasks.createFile(bCreate);
 
 	m_mResultFiles[name] = pFile;
 	m_mInodeToResultFiles[pFile->m_iInode] = pFile;
@@ -135,7 +135,13 @@ GCFS_Task::File* GCFS_Task::getResultFile(const char * name)
 {
 	GCFS_Task::Files::iterator it;
 	if((it = m_mResultFiles.find(name)) != m_mResultFiles.end())
+	{
+		// If handle not opened, open it
+		if(!it->second->m_hFile)
+			it->second->m_hFile = open(it->second->m_sPath.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+		
 		return it->second;
+	}
 	else
 		return NULL;
 }
@@ -242,17 +248,19 @@ GCFS_Task::File* GCFS_TaskManager::getInodeFile(int iInode)
 		return NULL;
 }
 
-GCFS_Task::File* GCFS_TaskManager::createFile()
+GCFS_Task::File* GCFS_TaskManager::createFile(bool bCreate)
 {
 	GCFS_Task::File *tmp = new GCFS_Task::File();
 
 	int iInode = getInode(tmp);
 	char buff[32];
-	snprintf(buff, sizeof(buff), "%ud", iInode);
+	snprintf(buff, sizeof(buff), "%x", iInode);
 
 	tmp->m_sPath = g_sConfig.m_sDataDir+"/"+buff;
 	tmp->m_iInode = iInode;
-	tmp->m_hFile = open(tmp->m_sPath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR);
+
+	if(bCreate)
+		tmp->m_hFile = open(tmp->m_sPath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR);
 
 	return tmp;
 }
