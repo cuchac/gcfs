@@ -10,7 +10,6 @@ class istream;
 }
 }
 
-
 class GCFS_ServiceSaga : public GCFS_Service
 {
 public:
@@ -20,9 +19,6 @@ public:
 public:
 	virtual bool 				submitTask(GCFS_Task* pTask);
 	virtual bool 				waitForTask(GCFS_Task* pTask);
-	
-private:
-	saga::job::service* 		m_pJobService;
 	
 };
 
