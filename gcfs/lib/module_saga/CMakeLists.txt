@@ -2,7 +2,7 @@ option(GCFS_MODULE_SAGA "Add support for SAGA grid control library")
 
 if (GCFS_MODULE_SAGA)
 
-	add_library(gcfs_saga gcfs_servicesaga.cpp)
+	add_library(gcfs_saga gcfs_servicesaga.cpp gcfs_servicesaga_taskdata.cpp)
 
 	FIND_PACKAGE(SAGA REQUIRED)
 
