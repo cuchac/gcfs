@@ -1,6 +1,7 @@
 #include "lib/simpleini/SimpleIni.h"
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <ftw.h>
 
 #include "gcfs_config.h"
 #include "gcfs_service.h"
@@ -29,7 +30,9 @@ bool GCFS_Config::loadConfig()
 		m_sDataDir += "/";
 
 		// Ensure directory exists
+		rmdirRecursive(m_sDataDir.c_str());
 		mkdirRecursive(m_sDataDir.c_str());
+		
 
 		CSimpleIniA::TNamesDepend vSections;
 		ini.GetAllSections(vSections);
@@ -105,6 +108,33 @@ bool GCFS_Config::mkdirRecursive(const char *path)
                 }
         if(access(opath, F_OK))         /* if path is not terminated with / */
                 mkdir(opath, S_IRWXU | S_IRWXG | S_IRWXO);
+}
+
+int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+{
+
+	// Skip roo dir itself
+	if(ftwbuf->base == 0)
+		return 0;
+	
+	int rv = remove(fpath);
+
+	if (rv)
+		perror(fpath);
+
+	return rv;
+}
+
+bool GCFS_Config::rmdirRecursive(const char *sPath)
+{
+	// Dummy failsafe
+	if(strlen(sPath) < 5)
+	{
+		printf("Tried to delete too short directory '%s'. Is this right?!?!?!\n", sPath);
+		return false;
+	}
+	
+	return nftw(sPath, unlink_cb, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS) != 0;
 }
 
 // Service management

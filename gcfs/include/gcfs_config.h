@@ -28,6 +28,7 @@ public:
 public:
 	bool								getHomePath(std::string &buffer);
 	bool								mkdirRecursive(const char *sPath);
+	bool 								rmdirRecursive(const char *sPath);
 
 
 	// Services management
