@@ -131,7 +131,7 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 		if(!isFile(sFilePath.c_str()))
 			continue;
 
-		GCFS_Task::File* pNewFile = pTask->createResultFile(pDirFile->d_name);
+		GCFS_Task::File* pNewFile = pTask->createResultFile(pDirFile->d_name, false);
 
 		if(rename(sFilePath.c_str(), pNewFile->m_sPath.c_str()))
 			printf("Error: Cannot move result file '%s' to '%s'\n", sFilePath.c_str(), pNewFile->m_sPath.c_str());

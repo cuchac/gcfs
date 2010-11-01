@@ -243,7 +243,13 @@ GCFS_Task::File* GCFS_TaskManager::getInodeFile(int iInode)
 {
 	std::map<int, GCFS_Task::File *>::iterator it;
 	if((it = m_mInodesOwner.find(iInode)) != m_mInodesOwner.end())
+	{
+		// If handle not opened, open it
+		if(!it->second->m_hFile)
+			it->second->m_hFile = open(it->second->m_sPath.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+		
 		return it->second;
+	}
 	else
 		return NULL;
 }

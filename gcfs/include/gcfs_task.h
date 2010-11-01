@@ -54,12 +54,15 @@ public:
 
 // File management
 
-	typedef struct File_t{
+	class File {
+	public:
+								File():m_iInode(0), m_hFile(0), m_pTask(NULL){};
+	public:
 		unsigned int		m_iInode;
 		std::string			m_sPath;
 		int					m_hFile;
 		GCFS_Task*			m_pTask;
-	} File;
+	};
 
 	typedef std::map<std::string, File*> Files;
 	
