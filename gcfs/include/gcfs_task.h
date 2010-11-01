@@ -64,10 +64,12 @@ public:
 	typedef std::map<std::string, File*> Files;
 	
 	File*												createDataFile(const char * name);
-	File*												deleteDataFile(const char * name);
+	bool												deleteDataFile(const char * name);
+	File* 											getDataFile(const char * name);
 	Files::const_iterator 						getDataFiles();
 	File*												createResultFile(const char * name);
-	File*												deleteResultFile(const char * name);
+	bool												deleteResultFile(const char * name);
+	File* 											getResultFile(const char * name);
 	Files::const_iterator 						getResultFiles();
 
 	File*												getExecutableFile();
@@ -106,6 +108,8 @@ public:
 	bool									putInode(int iInode);
 
 	GCFS_Task::File*					getInodeFile(int iInode);
+	
+	GCFS_Task::File* 					createFile();
 	
 	unsigned int						m_uiFirstFileInode;
 

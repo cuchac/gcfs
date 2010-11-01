@@ -43,38 +43,49 @@ bool GCFS_Task::isSubmited()
 
 GCFS_Task::File* GCFS_Task::createDataFile(const char * name)
 {
-	File *tmp = new File();
-
-	int iInode = g_sTasks.getInode(tmp);
-	char buff[32];
-	snprintf(buff, sizeof(buff), "%d", iInode);
+	File *pFile;
 	
-	m_mDataFiles[name] = tmp;
-	m_mInodeToDataFiles[iInode] = tmp;
+	if(pFile = getDataFile(name))
+		return pFile;
+	
+	pFile = g_sTasks.createFile();
 
-	tmp->m_sPath = g_sConfig.m_sDataDir+"/"+buff;
-	tmp->m_iInode = iInode;
-	tmp->m_hFile = open(tmp->m_sPath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR);
-	tmp->m_pTask = this;
+	m_mDataFiles[name] = pFile;
+	m_mInodeToDataFiles[pFile->m_iInode] = pFile;
+	pFile->m_pTask = this;
 
-	chown(tmp->m_sPath.c_str(), m_sPermissions.m_iUid, m_sPermissions.m_iGid);
+	chown(pFile->m_sPath.c_str(), m_sPermissions.m_iUid, m_sPermissions.m_iGid);
 
-	return tmp;
+	return pFile;
 }
 
-GCFS_Task::File* GCFS_Task::deleteDataFile(const char * name)
+bool GCFS_Task::deleteDataFile(const char * name)
 {
-	File *tmp = m_mDataFiles[name];
+	File *pFile = getDataFile(name);
 
-	close(tmp->m_hFile);
+	if(!pFile)
+		return false;
 
-	unlink(tmp->m_sPath.c_str());
+	close(pFile->m_hFile);
 
-	g_sTasks.putInode(tmp->m_iInode);
+	unlink(pFile->m_sPath.c_str());
 
-	delete tmp;
+	g_sTasks.putInode(pFile->m_iInode);
+
+	delete pFile;
 
 	m_mDataFiles.erase(name);
+
+	return true;
+}
+
+GCFS_Task::File* GCFS_Task::getDataFile(const char * name)
+{
+	GCFS_Task::Files::iterator it;
+	if((it = m_mDataFiles.find(name)) != m_mDataFiles.end())
+		return it->second;
+	else
+		return NULL;
 }
 
 GCFS_Task::Files::const_iterator GCFS_Task::getDataFiles()
@@ -84,38 +95,49 @@ GCFS_Task::Files::const_iterator GCFS_Task::getDataFiles()
 
 GCFS_Task::File* GCFS_Task::createResultFile(const char * name)
 {
-	File *tmp = new File();
-	
-	unsigned int iInode = g_sTasks.getInode(tmp);
-	char buff[32];
-	snprintf(buff, sizeof(buff), "%d", iInode);
+	File *pFile;
 
-	m_mResultFiles[name] = tmp;
-	m_mInodeToResultFiles[iInode] = tmp;
+	if(pFile = getResultFile(name))
+		return pFile;
 
-	tmp->m_sPath = g_sConfig.m_sDataDir+buff;
-	tmp->m_iInode = iInode;
-	tmp->m_hFile = creat(tmp->m_sPath.c_str(), S_IRUSR | S_IWUSR);
-	tmp->m_pTask = this;
+	pFile = g_sTasks.createFile();
 
-	chown(tmp->m_sPath.c_str(), m_sPermissions.m_iUid, m_sPermissions.m_iGid);
+	m_mResultFiles[name] = pFile;
+	m_mInodeToResultFiles[pFile->m_iInode] = pFile;
+	pFile->m_pTask = this;
 
-	return tmp;
+	chown(pFile->m_sPath.c_str(), m_sPermissions.m_iUid, m_sPermissions.m_iGid);
+
+	return pFile;
 }
 
-GCFS_Task::File* GCFS_Task::deleteResultFile(const char * name)
+bool GCFS_Task::deleteResultFile(const char * name)
 {
-	File *tmp = m_mResultFiles[name];
+	File *pFile = getResultFile(name);
 
-	close(tmp->m_hFile);
+	if(!pFile)
+		return false;
 
-	unlink(tmp->m_sPath.c_str());
+	close(pFile->m_hFile);
 
-	g_sTasks.putInode(tmp->m_iInode);
+	unlink(pFile->m_sPath.c_str());
 
-	delete tmp;
+	g_sTasks.putInode(pFile->m_iInode);
+
+	delete pFile;
 
 	m_mResultFiles.erase(name);
+
+	return true;
+}
+
+GCFS_Task::File* GCFS_Task::getResultFile(const char * name)
+{
+	GCFS_Task::Files::iterator it;
+	if((it = m_mResultFiles.find(name)) != m_mResultFiles.end())
+		return it->second;
+	else
+		return NULL;
 }
 
 GCFS_Task::Files::const_iterator GCFS_Task::getResultFiles()
@@ -218,6 +240,21 @@ GCFS_Task::File* GCFS_TaskManager::getInodeFile(int iInode)
 		return it->second;
 	else
 		return NULL;
+}
+
+GCFS_Task::File* GCFS_TaskManager::createFile()
+{
+	GCFS_Task::File *tmp = new GCFS_Task::File();
+
+	int iInode = getInode(tmp);
+	char buff[32];
+	snprintf(buff, sizeof(buff), "%ud", iInode);
+
+	tmp->m_sPath = g_sConfig.m_sDataDir+"/"+buff;
+	tmp->m_iInode = iInode;
+	tmp->m_hFile = open(tmp->m_sPath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR);
+
+	return tmp;
 }
 
 // Control files

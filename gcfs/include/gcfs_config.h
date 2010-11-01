@@ -25,7 +25,7 @@ public:
 	std::string						m_sDataDir;
 	std::string						m_sMountDir;
 
-private:
+public:
 	bool								getHomePath(std::string &buffer);
 	bool								mkdirRecursive(const char *sPath);
 
