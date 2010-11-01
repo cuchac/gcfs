@@ -79,19 +79,34 @@ bool GCFS_ControlControl::write(GCFS_Task* pTask, const char * sValue)
 	switch(iVal)
 	{
 		case eStart:
+		{
+			if(pTask->isSubmited())
+				return false;
+			
+			if(!pTask->getExecutableFile())
+				return false;
+	
 			return pService->submitTask(pTask);
 			break;
+		}
 		case eStartAndWait:
-			if(pService->submitTask(pTask))
+		{
+			if(this->write(pTask, "start"))
 			{
 				return pService->waitForTask(pTask);
 			}
 			else
 				return false;
 			break;
+		}
 		case eWait:
+		{
+			if(!pTask->isSubmited() || pTask->isFinished())
+				return false;
+			
 			return pService->waitForTask(pTask);
 			break;
+		}
 		case eAbort:
 			break;
 		case eSuspend:
