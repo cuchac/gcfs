@@ -20,10 +20,6 @@ public:
 public:
 	virtual bool 				submitTask(GCFS_Task* pTask);
 	virtual bool 				waitForTask(GCFS_Task* pTask);
-
-public:
-	GCFS_Task::Status			getTaskStatus(GCFS_Task* pTask);
-	GCFS_Task::Status 		storeStream(saga::job::istream* pStream, GCFS_Task::File* pFile);
 	
 private:
 	saga::job::service* 		m_pJobService;
