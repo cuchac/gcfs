@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <saga/saga.hpp>
+#include <dirent.h>
 
 namespace sa  = saga::attributes;
 namespace sja = saga::job::attributes;
@@ -19,30 +20,13 @@ GCFS_ServiceSaga::~GCFS_ServiceSaga()
 
 bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 {
-	GCFS_Task::File * pExecutable = pTask->getExecutableFile();
-	if(!pExecutable)
-		return false;
-
-	// If running under root, change credentials to submiting user
-	if(g_sConfig.m_sPermissions.m_iUid == 0 || g_sConfig.m_sPermissions.m_iGid == 0)
-	{
-		// Set user permissions if running under root
-		setresgid(pTask->m_sPermissions.m_iGid, pTask->m_sPermissions.m_iGid, 0);
-		setresuid(pTask->m_sPermissions.m_iUid, pTask->m_sPermissions.m_iUid, 0);
-	}
-
 	// Prepare directories for submission
 	std::string sTaskDirPath = g_sConfig.m_sMountDir+"/"+pTask->m_sName+"/";
 
 	std::string sSubmitDir = g_sConfig.m_sDataDir+pTask->m_sName+"/";
-	g_sConfig.mkdirRecursive(sSubmitDir.c_str());
-
-	GCFS_Task::File* error = pTask->createResultFile("error");
-	GCFS_Task::File* output = pTask->createResultFile("output");
-
-	// Allow world to write into them - security suicide but necessary for non-root Condor
-	chmod(error->m_sPath.c_str(), 0777);
-	chmod(output->m_sPath.c_str(), 0777);
+	mkdir(sSubmitDir.c_str(), 0777);
+	
+	// Allow world to write into submission dir - security suicide but necessary for non-root Condor
 	chmod(sSubmitDir.c_str(), 0777);
 
 	// Fill-in job description
@@ -59,10 +43,20 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	// Ge to submission directory - did not found any other way to set submission dir. Chdir subejct to race conditions?
 	chdir(sSubmitDir.c_str());
 	
-	SagaTaskData * pTaskData = new SagaTaskData;
+	SagaTaskData * pTaskData = new SagaTaskData();
 	pTaskData->m_sCallback.setTask(pTask);
+	pTaskData->m_sCallback.setService(this);
+
+	// Start Submission
+	// If running under root, change credentials to submiting user
+	if(g_sConfig.m_sPermissions.m_iUid == 0 || g_sConfig.m_sPermissions.m_iGid == 0)
+	{
+		// Set user permissions if running under root
+		setresgid(pTask->m_sPermissions.m_iGid, pTask->m_sPermissions.m_iGid, 0);
+		setresuid(pTask->m_sPermissions.m_iUid, pTask->m_sPermissions.m_iUid, 0);
+	}
 	
-	pTaskData->m_sService = saga::job::service(saga::url::url("condor://localhost"));
+	pTaskData->m_sService = saga::job::service(saga::url("condor://localhost"));
 	
 	pTaskData->m_sJob = pTaskData->m_sService.create_job(sJobDescription);
 
@@ -98,4 +92,52 @@ bool GCFS_ServiceSaga::waitForTask(GCFS_Task* pTask)
 	pTaskData->m_sJob.wait();
 
 	return true;
+}
+
+bool isFile(const char* sPath)
+{
+	struct stat sFileStat;
+
+	stat(sPath, &sFileStat);
+
+	return S_ISREG (sFileStat.st_mode);
+}
+
+bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
+{
+	printf("Finishing task!!!!\n");
+	SagaTaskData* pTaskData = (SagaTaskData*)pTask->m_pServiceData;
+
+	delete (SagaTaskData*)pTask->m_pServiceData;
+	pTask->m_pServiceData = 0;
+	
+	if(sMessage)
+	{
+		GCFS_Task::File* error = pTask->createResultFile("error");
+		
+		write(error->m_hFile, sMessage, strlen(sMessage));
+		return true;
+	}
+
+	std::string sSubmitDir = g_sConfig.m_sDataDir+pTask->m_sName+"/";
+
+	DIR* pDir = opendir(sSubmitDir.c_str());
+	dirent* pDirFile;
+
+	while(pDirFile = readdir(pDir))
+	{
+		std::string sFilePath = sSubmitDir+pDirFile->d_name;
+		
+		if(!isFile(sFilePath.c_str()))
+			continue;
+
+		GCFS_Task::File* pNewFile = pTask->createResultFile(pDirFile->d_name);
+
+		if(rename(sFilePath.c_str(), pNewFile->m_sPath.c_str()))
+			printf("Error: Cannot move result file '%s' to '%s'\n", sFilePath.c_str(), pNewFile->m_sPath.c_str());
+	}
+
+	closedir(pDir);
+
+	rmdir(sSubmitDir.c_str());
 }

@@ -1,4 +1,16 @@
 #include "gcfs_servicesaga_taskdata.h"
+#include "gcfs_servicesaga.h"
+#include <gcfs_config.h>
+
+void SagaCallback::setTask(GCFS_Task* pTask)
+{
+	m_pTask = pTask;
+}
+
+void SagaCallback::setService(GCFS_ServiceSaga* pService)
+{
+	m_pService = pService;
+}
 
 GCFS_Task::Status SagaCallback::convertStatus(const char * sStatus)
 {
@@ -31,6 +43,8 @@ bool SagaCallback::callbackStatus (saga::monitorable mt,
 
 	printf("Status changed to: %s => %d\n", sStatus.c_str(), m_pTask->m_eStatus);
 
-	// all other state changes are ignored
+	if(m_pTask->isFinished())
+		m_pService->finishTask(m_pTask);
+
 	return true; // keep callback registered
 }

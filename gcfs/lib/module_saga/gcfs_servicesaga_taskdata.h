@@ -4,25 +4,31 @@
 #include <saga/saga.hpp>
 #include <gcfs_task.h>
 
+class GCFS_ServiceSaga;
+
 class SagaCallback : public saga::callback
 {
-	GCFS_Task* m_pTask;
+public:
+	void 						setTask(GCFS_Task* pTask);
+	void 						setService(GCFS_ServiceSaga* pService);
 
 public:
-	void setTask(GCFS_Task* pTask){m_pTask = pTask;};
+	GCFS_Task::Status 	convertStatus(const char * sStatus);
 
-	GCFS_Task::Status convertStatus(const char * sStatus);
+	bool 						callbackStatus (saga::monitorable mt, saga::metric m, saga::context c);
 
-	bool callbackStatus (saga::monitorable mt,
-				saga::metric      m,
-				saga::context     c);
+private:
+	GCFS_Task* 				m_pTask;
+	GCFS_ServiceSaga* 	m_pService;
+
 };
 
-typedef struct{
+class SagaTaskData {
+public:
 	saga::job::service 	m_sService;
 	saga::job::job 		m_sJob;
 	SagaCallback			m_sCallback;
-} SagaTaskData;
+};
 
 
 #endif /*GCFS_SERVICESAGA_TASKDATA_H*/

@@ -19,7 +19,9 @@ public:
 public:
 	virtual bool 				submitTask(GCFS_Task* pTask);
 	virtual bool 				waitForTask(GCFS_Task* pTask);
-	
+
+public:
+	bool							finishTask(GCFS_Task* pTask, const char* sMessage = NULL);
 };
 
 #endif // GCFS_SERVICESAGA_H
