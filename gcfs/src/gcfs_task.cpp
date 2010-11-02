@@ -170,6 +170,8 @@ GCFS_TaskManager::GCFS_TaskManager():m_uiFirstFileInode(-1)
 	m_vControls.push_back(new GCFS_ControlControl());
 	m_vControls.push_back(new GCFS_ControlStatus());
 	m_vControls.push_back(new GCFS_ControlStatus());
+
+	m_vControls[2]->m_sName = "executable";
 	
 	m_mControlNames["control"] = 0;
 	m_mControlNames["executable"] = 1;
