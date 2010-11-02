@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <saga/saga.hpp>
 #include <dirent.h>
+#include <wordexp.h>
 
 namespace sa  = saga::attributes;
 namespace sja = saga::job::attributes;
@@ -29,16 +30,36 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	// Allow world to write into submission dir - security suicide but necessary for non-root Condor
 	chmod(sSubmitDir.c_str(), 0777);
 
-	// Fill-in job description
-	std::vector <std::string> arguments;
-	arguments.push_back (pTask->m_sArguments.m_sValue);
+	// Fill-in executable parameters - parse arguments string into parameters
+	std::vector <std::string> vArguments;
+	wordexp_t sArguments;
+	wordexp(pTask->m_sArguments.m_sValue.c_str(), &sArguments, 0);
+	for (int iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
+		vArguments.push_back(sArguments.we_wordv[iIndex]);
+	wordfree(&sArguments);
+	
+	// Fill data files to send
+	std::vector <std::string> vDataFiles;
+	const GCFS_Task::Files vTaskDataFiles =  pTask->getDataFiles();
+	for(GCFS_Task::Files::const_iterator it = vTaskDataFiles.begin(); it != vTaskDataFiles.end(); it++)
+	{
+		if(it->first != basename(pTask->m_sExecutable.m_sValue.c_str())) // Ececutable is transferet automagically
+		{
+			// Hard-Link the file to subit directory and add to files to transfer
+			std::string linkTarget = sSubmitDir+it->first;
+			link(it->second->m_sPath.c_str(), linkTarget.c_str());
+			chmod(linkTarget.c_str(), 0777);
+			vDataFiles.push_back(it->first + " > " + it->first);
+		}
+	}
 
 	saga::job::description sJobDescription;
 	sJobDescription.set_attribute(sja::description_interactive, sa::common_false);
 	sJobDescription.set_attribute(sja::description_executable, sTaskDirPath+pTask->m_sExecutable.m_sValue);
 	sJobDescription.set_attribute(sja::description_error,"error");
 	sJobDescription.set_attribute(sja::description_output, "output");
-	sJobDescription.set_vector_attribute(sja::description_arguments, arguments);
+	sJobDescription.set_vector_attribute(sja::description_arguments, vArguments);
+	sJobDescription.set_vector_attribute(sja::description_file_transfer, vDataFiles);
 
 	// Ge to submission directory - did not found any other way to set submission dir. Chdir subejct to race conditions?
 	chdir(sSubmitDir.c_str());
