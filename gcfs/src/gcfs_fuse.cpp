@@ -318,7 +318,6 @@ static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
 		{
 			printf("Error open: inode: %d\n", (int)ino);
 			fuse_reply_err(req, EACCES);
-			return;
 		}
 	}
 }
@@ -336,7 +335,7 @@ static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 		size = read(pFile->m_hFile, buff, size);
 
 		fuse_reply_buf(req, buff, size);
-		delete buff;
+		delete buff[];
 	}
 	else
 	{
@@ -367,7 +366,6 @@ static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 		{
 			printf("Error read: inode: %d\n", (int)ino);
 			fuse_reply_err(req, EACCES);
-			return;
 		}
 	}
 }
@@ -412,7 +410,6 @@ static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 		{
 			printf("Error write: inode: %d\n", (int)ino);
 			fuse_reply_err(req, EACCES);
-			return;
 		}
 	}
 }
@@ -458,6 +455,7 @@ static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 			return;
 		}
 		fuse_reply_err(req, EEXIST);
+		return;
 	}
 
 	fuse_reply_err(req, EACCES);
@@ -478,6 +476,7 @@ static void gcfs_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name)
 			return;
 		}
 		fuse_reply_err(req, ENOENT);
+		return;
 	}
 
 	fuse_reply_err(req, EACCES);
@@ -498,6 +497,7 @@ static void gcfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 			return;
 		}
 		fuse_reply_err(req, ENOENT);
+		return;
 	}
 	else if(iParentIndex == GCFS_DIR_DATA)
 	{
@@ -510,6 +510,7 @@ static void gcfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 			return;
 		}
 		fuse_reply_err(req, ENOENT);
+		return;
 	}
 
 	fuse_reply_err(req, EACCES);
@@ -534,6 +535,7 @@ static void gcfs_create(fuse_req_t req, fuse_ino_t parent, const char *name,
 		gcfs_stat(e.ino, &e.attr);
 		
 		fuse_reply_create(req, &e, fi);
+		return;
 	}
 
 	fuse_reply_err(req, EACCES);
@@ -557,6 +559,7 @@ static void gcfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
 		gcfs_stat(e.ino, &e.attr);
 
 		fuse_reply_entry(req, &e);
+		return;
 	}
 
 	fuse_reply_err(req, EACCES);
