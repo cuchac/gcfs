@@ -69,11 +69,11 @@ public:
 	File*												createDataFile(const char * name);
 	bool												deleteDataFile(const char * name);
 	File* 											getDataFile(const char * name);
-	Files::const_iterator 						getDataFiles();
+	const GCFS_Task::Files& 					getDataFiles();
 	File*												createResultFile(const char* name, bool bCreate = true);
 	bool												deleteResultFile(const char * name);
 	File* 											getResultFile(const char * name);
-	Files::const_iterator 						getResultFiles();
+	const GCFS_Task::Files&						getResultFiles();
 
 	File*												getExecutableFile();
 	

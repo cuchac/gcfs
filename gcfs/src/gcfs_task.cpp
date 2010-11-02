@@ -88,9 +88,9 @@ GCFS_Task::File* GCFS_Task::getDataFile(const char * name)
 		return NULL;
 }
 
-GCFS_Task::Files::const_iterator GCFS_Task::getDataFiles()
+const GCFS_Task::Files& GCFS_Task::getDataFiles()
 {
-	return m_mDataFiles.begin();
+	return m_mDataFiles;
 }
 
 GCFS_Task::File* GCFS_Task::createResultFile(const char * name, bool bCreate)
@@ -146,9 +146,9 @@ GCFS_Task::File* GCFS_Task::getResultFile(const char * name)
 		return NULL;
 }
 
-GCFS_Task::Files::const_iterator GCFS_Task::getResultFiles()
+const GCFS_Task::Files& GCFS_Task::getResultFiles()
 {
-	return m_mResultFiles.begin();
+	return m_mResultFiles;
 }
 
 GCFS_Task::File* GCFS_Task::getExecutableFile()
