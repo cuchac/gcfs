@@ -335,7 +335,7 @@ static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 		size = read(pFile->m_hFile, buff, size);
 
 		fuse_reply_buf(req, buff, size);
-		delete buff[];
+		delete [] buff;
 	}
 	else
 	{

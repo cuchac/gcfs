@@ -7,6 +7,7 @@
 #include <saga/saga.hpp>
 #include <dirent.h>
 #include <wordexp.h>
+#include <libgen.h>
 
 namespace sa  = saga::attributes;
 namespace sja = saga::job::attributes;
@@ -72,9 +73,15 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	// If running under root, change credentials to submiting user
 	if(g_sConfig.m_sPermissions.m_iUid == 0 || g_sConfig.m_sPermissions.m_iGid == 0)
 	{
+#ifdef __APPLE__
 		// Set user permissions if running under root
+		setregid(pTask->m_sPermissions.m_iGid, pTask->m_sPermissions.m_iGid);
+		setreuid(pTask->m_sPermissions.m_iUid, pTask->m_sPermissions.m_iUid);
+#else
 		setresgid(pTask->m_sPermissions.m_iGid, pTask->m_sPermissions.m_iGid, 0);
 		setresuid(pTask->m_sPermissions.m_iUid, pTask->m_sPermissions.m_iUid, 0);
+#endif
+		printf("User ID in out: %d %d", getuid(), geteuid());
 	}
 	
 	pTaskData->m_sService = saga::job::service(saga::url("condor://localhost"));
@@ -99,8 +106,15 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	if(g_sConfig.m_sPermissions.m_iUid == 0 || g_sConfig.m_sPermissions.m_iGid == 0)
 	{
 		// Return back permissions
+#ifdef __APPLE__
+		// Set user permissions if running under root
+		setregid(0, 0);
+		setreuid(0, 0);
+#else
 		setresgid(0, 0, 0);
 		setresuid(0, 0, 0);
+#endif
+		printf("User ID: %d %d", getuid(), geteuid());
 	}
 
 	return true;
