@@ -154,7 +154,7 @@ const GCFS_Task::Files& GCFS_Task::getResultFiles()
 
 GCFS_Task::File* GCFS_Task::getExecutableFile()
 {
-	const char * psFileName = basename(m_sExecutable.m_sValue.c_str());
+	const char * psFileName = basename((char*)m_sExecutable.m_sValue.c_str());
 
 	Files::iterator it;
 	if((it = m_mDataFiles.find(psFileName)) == m_mDataFiles.end())

@@ -44,7 +44,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	const GCFS_Task::Files vTaskDataFiles =  pTask->getDataFiles();
 	for(GCFS_Task::Files::const_iterator it = vTaskDataFiles.begin(); it != vTaskDataFiles.end(); it++)
 	{
-		if(it->first != basename(pTask->m_sExecutable.m_sValue.c_str())) // Ececutable is transferet automagically
+		if(it->first != basename((char*)pTask->m_sExecutable.m_sValue.c_str())) // Ececutable is transferet automagically
 		{
 			// Hard-Link the file to subit directory and add to files to transfer
 			std::string linkTarget = sSubmitDir+it->first;
