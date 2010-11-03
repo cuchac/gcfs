@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <gcfs_controls.h>
 #include <string.h>
+#include <libgen.h>
 
 GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_iMemory("memory", "1024"),

@@ -62,6 +62,9 @@ if (SAGA_INCLUDE_DIR)
 
     find_library(SAGA_LIBRARIES_CORE
                  NAMES "libsaga_core.so"
+                       "libsaga_core.dylib"
+                       "libsaga_engine.so"
+                       "libsaga_engine.dylib"
                  PATHS "/usr/local"
                        "/usr"
                  ENV SAGA_ROOTDIR
@@ -69,6 +72,7 @@ if (SAGA_INCLUDE_DIR)
 	 
 	find_library(SAGA_LIBRARIES_JOB
                  NAMES "libsaga_package_job.so"
+                       "libsaga_package_job.dylib"
                  PATHS "/usr/local"
                        "/usr"
                  ENV SAGA_ROOTDIR
