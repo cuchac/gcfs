@@ -3,6 +3,7 @@
 #include "gcfs_task.h"
 #include "gcfs_config.h"
 #include "gcfs_service.h"
+#include "gcfs_utils.h"
 
 #include <string.h>
 #include <stdio.h>
