@@ -12,20 +12,20 @@ bool GCFS_Config::loadConfig()
 	CSimpleIniA ini;
 	ini.SetUnicode();
 
-	std::string sHomePath;
-	GCFS_Utils::getHomePath(sHomePath);
+	std::string sConfigPath;
 
-	if(access((sHomePath+GCFS_CONFIG_CONFIGFILE).c_str(), R_OK) == 0)
+	if(getConfigFile(sConfigPath))
 	{
-		ini.LoadFile((sHomePath+GCFS_CONFIG_CONFIGFILE).c_str());
+		ini.LoadFile(sConfigPath.c_str());
 
-		m_sDataDir = ini.GetValue("Global", "dataPath", (sHomePath+GCFS_CONFIG_DATADIR).c_str());
-		m_sDataDir += "/";
+		m_sDataDir = ini.GetValue("Global", "dataPath", "");
+		// Make sure path ends with slash
+		if(*(m_sDataDir.rbegin()) != '/')
+			m_sDataDir += "/";
 
 		// Ensure directory exists
-		GCFS_Utils::rmdirRecursive(m_sDataDir.c_str());
+		//GCFS_Utils::rmdirRecursive(m_sDataDir.c_str()); // Too dangerous to delete whole dir
 		GCFS_Utils::mkdirRecursive(m_sDataDir.c_str());
-		
 
 		CSimpleIniA::TNamesDepend vSections;
 		ini.GetAllSections(vSections);
@@ -33,40 +33,63 @@ bool GCFS_Config::loadConfig()
 		CSimpleIniA::TNamesDepend::iterator it;
 		for(it = vSections.begin(); it != vSections.end(); ++it)
 		{
-			if(it->pItem == "Global")
-				continue;
-
 			const char * sDriver = ini.GetValue(it->pItem, "driver", "");
 
 			if(!sDriver[0])
 				continue;
 
-			AddService(sDriver, it->pItem);
+			GCFS_Service* pNewService = AddService(sDriver, it->pItem);
+			//pNewService->configure(&ini);
 			
 			printf("Adding service: %s, driver:%s\n", it->pItem, sDriver);
-
 		}
-	}else
+		
+		return true;
+	}
+	else
 	{
-		printf("No config file found! Creting default at: %s\n", (sHomePath+GCFS_CONFIG_CONFIGDIR).c_str());
-		printf("To actualy use Gcfs, you have to modify the configuration file\n");
+		printf("No config file found! Creting default at: %s\n", sConfigPath.c_str());
+		printf("To actualy use Gcfs, you have to modify the configuration file\nNow exiting.\n");
 		
 		// Config file does not exists
-		GCFS_Utils::mkdirRecursive((sHomePath+GCFS_CONFIG_CONFIGDIR).c_str());
+		GCFS_Utils::mkdirRecursive(sConfigPath.substr(sConfigPath.rfind('/')).c_str());
 
-		int hFile = creat((sHomePath+GCFS_CONFIG_CONFIGFILE).c_str(), S_IRUSR | S_IWUSR);
-		write(hFile, GCFS_CONFIG_DEFAULTCONFIG, sizeof(GCFS_CONFIG_DEFAULTCONFIG)-1);
+		int hFile = creat(sConfigPath.c_str(), S_IRUSR | S_IWUSR);
+		write(hFile, GCFS_CONFIG_DEFAULTCONFIG, ARRAYSIZE(GCFS_CONFIG_DEFAULTCONFIG)-1);
 		close(hFile);
+
+		return false;
 	}
 }
 
-// Service management
-bool GCFS_Config::AddService(const char * sDriver, const char * sName)
+bool GCFS_Config::getConfigFile(std::string &sPath)
 {
-	GCFS_Service * tmpService = GCFS_Service::createService(sDriver, sName);
+	// First try user dir
+	GCFS_Utils::getHomePath(sPath);
+
+	if(access((sPath+GCFS_CONFIG_USERDIR+GCFS_CONFIG_FILENAME).c_str(), R_OK) == 0)
+		return true;
+
+	sPath = GCFS_CONFIG_SYSTEMDIR GCFS_CONFIG_FILENAME;
+	if(access(sPath.c_str(), R_OK) == 0)
+		return true;
+
+	// Fill in user dir for use in creation of config file
+	GCFS_Utils::getHomePath(sPath);
+	sPath += GCFS_CONFIG_USERDIR GCFS_CONFIG_FILENAME;
+	return false;
+}
+
+
+// Service management
+GCFS_Service* GCFS_Config::AddService(const char * sDriver, const char * sName)
+{
+	GCFS_Service* tmpService = GCFS_Service::createService(sDriver, sName);
 	m_vServices.push_back(tmpService);
 	m_vServiceNames.push_back(sName);
 	m_mNameToService[sName] = m_vServices.size()-1;
+	
+	return tmpService;
 }
 
 size_t GCFS_Config::GetServiceCount()

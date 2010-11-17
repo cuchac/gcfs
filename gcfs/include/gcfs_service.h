@@ -15,7 +15,7 @@ class GCFS_Service
 public:
 										GCFS_Service(const char * sName):m_sName(sName){};
 
-	bool								configure(CSimpleIniA * pConfig);
+	bool								configure(CSimpleIniA* pConfig);
 
 public:
 	// Factory of modules instances

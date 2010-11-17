@@ -1,9 +1,11 @@
 #ifndef GCFS_CONFIG_H
 #define GCFS_CONFIG_H
 
-#define GCFS_CONFIG_CONFIGDIR				"/.config/gcfs/"
-#define GCFS_CONFIG_CONFIGFILE			(GCFS_CONFIG_CONFIGDIR "config.conf")
-#define GCFS_CONFIG_DATADIR				"/.local/gcfs/data/"
+#define GCFS_CONFIG_FILENAME				"gcfs.conf"
+#define GCFS_CONFIG_SYSTEMDIR				"/etc/gcfs/"
+#define GCFS_CONFIG_USERDIR				"/.config/gcfs/"
+#define GCFS_CONFIG_USERDATADIR			"/.local/gcfs/data/"
+#define GCFS_CONFIG_SYSTEMDATADIR		"/tmp/gcfs/"
 
 #include "gcfs_config_default.h"
 
@@ -25,10 +27,12 @@ public:
 	std::string						m_sDataDir;
 	std::string						m_sMountDir;
 
+	bool								getConfigFile(std::string &sPath);
+
 
 	// Services management
 public:
-	bool					AddService(const char* sDriver, const char* sName);
+	GCFS_Service*		AddService(const char* sDriver, const char* sName);
 
 	size_t				GetServiceCount();
 
