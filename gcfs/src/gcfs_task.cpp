@@ -10,26 +10,24 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_iMemory("memory", "1024"),
 	m_iProcesses("processes", "1"),
 	m_iTimeout("timeout", "3600"),
-	m_iService("service", 0, &g_sConfig.m_vServiceNames),
+	m_iService("service", NULL, &g_sConfig.m_vServiceNames),
 	m_sExecutable("executable", "./data/executable"),
 	m_sArguments("arguments", ""),
+	m_sEnvironment("environment"),
 	m_eStatus(eNew),
 	m_sPermissions(),
 	m_pServiceData(NULL)
 {
-	m_vConfigValues.push_back(&m_iMemory);
-	m_vConfigValues.push_back(&m_iProcesses);
-	m_vConfigValues.push_back(&m_iTimeout);
-	m_vConfigValues.push_back(&m_iService);
-	m_vConfigValues.push_back(&m_sExecutable);
-	m_vConfigValues.push_back(&m_sArguments);
+	assignVariable(&m_iMemory);
+	assignVariable(&m_iProcesses);
+	assignVariable(&m_iTimeout);
+	assignVariable(&m_iService);
+	assignVariable(&m_sExecutable);
+	assignVariable(&m_sArguments);
+	assignVariable(&m_sEnvironment);
 
-	m_mConfigNameToIndex["memory"] = 0;
-	m_mConfigNameToIndex["processes"] = 1;
-	m_mConfigNameToIndex["timeout"] = 2;
-	m_mConfigNameToIndex["service"] = 3;
-	m_mConfigNameToIndex["executable"] = 4;
-	m_mConfigNameToIndex["arguments"] = 5;
+	// Set default service
+	m_iService.SetValue(g_sConfig.m_sDefaultService.c_str());
 }
 
 bool GCFS_Task::isFinished()
@@ -40,6 +38,13 @@ bool GCFS_Task::isFinished()
 bool GCFS_Task::isSubmited()
 {
 	return m_eStatus != GCFS_Task::eNew;
+}
+
+void GCFS_Task::assignVariable(GCFS_ConfigValue* pValue)
+{
+	m_vConfigValues.push_back(pValue);
+	m_mConfigNameToIndex[pValue->m_sName] = m_vConfigValues.size()-1;
+	pValue->m_pTask = this;
 }
 
 GCFS_Task::File* GCFS_Task::createDataFile(const char * name)

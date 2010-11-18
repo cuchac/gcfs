@@ -53,8 +53,11 @@ public:
 	std::vector<GCFS_ConfigValue*>		m_vConfigValues;
 	std::map<std::string, int> 			m_mConfigNameToIndex;
 
-// File management
+private:
+	void											assignVariable(GCFS_ConfigValue* pValue);
 
+// File management
+public:
 	class File {
 	public:
 								File():m_iInode(0), m_hFile(0), m_pTask(NULL){};

@@ -17,6 +17,8 @@ public:
 
 public:
 	const char * 	m_sName;
+	size_t			m_iSize;
+	GCFS_Task* 		m_pTask;
 };
 
 class GCFS_ConfigInt: public GCFS_ConfigValue
