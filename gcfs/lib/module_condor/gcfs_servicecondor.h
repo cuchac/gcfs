@@ -1,6 +1,7 @@
 #ifndef GCFS_SERVICECONDOR_H
 #define GCFS_SERVICECONDOR_H
 
+#include "lib/simpleini/SimpleIni.h"
 #include <gcfs_service.h>
 
 class GCFS_ServiceCondor: public GCFS_Service
