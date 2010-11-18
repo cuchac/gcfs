@@ -2,6 +2,7 @@
 #include "gcfs_servicesaga_taskdata.h"
 
 #include <gcfs_config.h>
+#include <gcfs_utils.h>
 
 #include <stdio.h>
 #include <saga/saga.hpp>
@@ -76,11 +77,16 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 		}
 	}
 
+	// Print number of processes to temporary buffer
+	char sProcesses[32] = {};
+	snprintf(sProcesses, ARRAYSIZE(sProcesses), "%d", pTask->m_iProcesses.m_iValue);
+
 	saga::job::description sJobDescription;
 	sJobDescription.set_attribute(sja::description_interactive, sa::common_false);
 	sJobDescription.set_attribute(sja::description_executable, sTaskDirPath+pTask->m_sExecutable.m_sValue);
 	sJobDescription.set_attribute(sja::description_error,"error");
 	sJobDescription.set_attribute(sja::description_output, "output");
+	sJobDescription.set_attribute(sja::description_number_of_processes, sProcesses);
 	
 	sJobDescription.set_vector_attribute(sja::description_arguments, vArguments);
 	sJobDescription.set_vector_attribute(sja::description_file_transfer, vDataFiles);
