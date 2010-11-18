@@ -20,6 +20,21 @@ GCFS_ServiceSaga::~GCFS_ServiceSaga()
 {
 }
 
+bool GCFS_ServiceSaga::configure(CSimpleIniA& pConfig)
+{
+	CSimpleIniA::TKeyVal::const_iterator it;
+	const CSimpleIniA::TKeyVal* pSection = pConfig.GetSection(m_sName.c_str());
+
+	if((it = pSection->find("service_url"))==pSection->end())
+	{
+		printf("Configuration of '%s': Missing mandatory parameter: %s", m_sName.c_str(), "service_url");
+		return false;
+	}
+	m_sServiceUrl = it->second;
+
+	return GCFS_Service::configure(pConfig);
+}
+
 bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 {
 	// Prepare directories for submission
@@ -34,7 +49,8 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	// Fill-in executable parameters - parse arguments string into parameters
 	std::vector <std::string> vArguments;
 	wordexp_t sArguments;
-	wordexp(pTask->m_sArguments.m_sValue.c_str(), &sArguments, 0);
+	if(wordexp(pTask->m_sArguments.m_sValue.c_str(), &sArguments, 0))
+		return false;
 	for (int iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
 		vArguments.push_back(sArguments.we_wordv[iIndex]);
 	wordfree(&sArguments);
@@ -81,10 +97,9 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 		setresgid(pTask->m_sPermissions.m_iGid, pTask->m_sPermissions.m_iGid, 0);
 		setresuid(pTask->m_sPermissions.m_iUid, pTask->m_sPermissions.m_iUid, 0);
 #endif
-		printf("User ID in out: %d %d", getuid(), geteuid());
 	}
 	
-	pTaskData->m_sService = saga::job::service(saga::url("condor://localhost"));
+	pTaskData->m_sService = saga::job::service(saga::url(m_sServiceUrl));
 	
 	pTaskData->m_sJob = pTaskData->m_sService.create_job(sJobDescription);
 
@@ -114,7 +129,6 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 		setresgid(0, 0, 0);
 		setresuid(0, 0, 0);
 #endif
-		printf("User ID: %d %d", getuid(), geteuid());
 	}
 
 	return true;
