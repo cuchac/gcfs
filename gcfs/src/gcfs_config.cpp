@@ -16,9 +16,11 @@ bool GCFS_Config::loadConfig()
 
 	if(getConfigFile(sConfigPath))
 	{
+		printf("Using config file: %s\n", sConfigPath.c_str());
+		
 		ini.LoadFile(sConfigPath.c_str());
 
-		m_sDataDir = ini.GetValue("Global", "dataPath", "");
+		m_sDataDir = ini.GetValue("Global", "data_path", "");
 		// Make sure path ends with slash
 		if(*(m_sDataDir.rbegin()) != '/')
 			m_sDataDir += "/";
@@ -27,22 +29,42 @@ bool GCFS_Config::loadConfig()
 		//GCFS_Utils::rmdirRecursive(m_sDataDir.c_str()); // Too dangerous to delete whole dir
 		GCFS_Utils::mkdirRecursive(m_sDataDir.c_str());
 
-		CSimpleIniA::TNamesDepend vSections;
-		ini.GetAllSections(vSections);
-
-		CSimpleIniA::TNamesDepend::iterator it;
-		for(it = vSections.begin(); it != vSections.end(); ++it)
+		CSimpleIniA::TKeyVal::const_iterator it;
+		const CSimpleIniA::TKeyVal* pSectionValues = ini.GetSection("Global");
+		if(!pSectionValues)
 		{
-			const char * sDriver = ini.GetValue(it->pItem, "driver", "");
+			printf("Configure error: Mandatory section 'Global' not found!\nExiting now.\n");
+			return false;
+		}
+		
+		for(it = pSectionValues->begin(); it != pSectionValues->end(); ++it)
+		{
+			if(strcmp(it->first.pItem, "service") != 0)
+				continue;
+
+			const char * sDriver = ini.GetValue(it->second, "driver", "");
 
 			if(!sDriver[0])
 				continue;
 
-			GCFS_Service* pNewService = AddService(sDriver, it->pItem);
-			//pNewService->configure(&ini);
+			GCFS_Service* pNewService = AddService(sDriver, it->second);
+
+			if(!pNewService->configure(ini))
+				printf("Failed configuration of %s service!\n", it->second);
 			
-			printf("Adding service: %s, driver:%s\n", it->pItem, sDriver);
+			printf("Adding service: %s, driver:%s\n", it->second, sDriver);
 		}
+
+		if(m_vServiceNames.size() <= 0)
+		{
+			printf("Configure error: No service defined!\nExiting now.\n");
+			return false;
+		}
+
+		if((it = pSectionValues->find("default_service")) != pSectionValues->end())
+			m_sDefaultService = it->second;
+		else
+			m_sDefaultService = m_vServiceNames[0];
 		
 		return true;
 	}
@@ -67,7 +89,8 @@ bool GCFS_Config::getConfigFile(std::string &sPath)
 	// First try user dir
 	GCFS_Utils::getHomePath(sPath);
 
-	if(access((sPath+GCFS_CONFIG_USERDIR+GCFS_CONFIG_FILENAME).c_str(), R_OK) == 0)
+	sPath += GCFS_CONFIG_USERDIR GCFS_CONFIG_FILENAME;
+	if(access(sPath.c_str(), R_OK) == 0)
 		return true;
 
 	sPath = GCFS_CONFIG_SYSTEMDIR GCFS_CONFIG_FILENAME;

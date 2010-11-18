@@ -26,10 +26,11 @@ public:
 public:
 	std::string						m_sDataDir;
 	std::string						m_sMountDir;
+	std::string						m_sDefaultService;
 
 	bool								getConfigFile(std::string &sPath);
 
-
+	
 	// Services management
 public:
 	GCFS_Service*		AddService(const char* sDriver, const char* sName);
@@ -48,7 +49,6 @@ public:
 	std::vector<std::string>			m_vServiceNames;
 
 	// Permission of mounted filesystem
-
 	GCFS_Permissions						m_sPermissions;
 
 };
