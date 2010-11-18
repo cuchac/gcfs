@@ -15,7 +15,11 @@ class GCFS_Service
 public:
 										GCFS_Service(const char * sName):m_sName(sName){};
 
-	bool								configure(CSimpleIniA* pConfig);
+	// Configure service from config file
+	virtual bool					configure(CSimpleIniA& pConfig);
+
+	// Hook for service-dependent customization of task
+	virtual bool					customizeTask(GCFS_Task* pTask);
 
 public:
 	// Factory of modules instances
@@ -30,6 +34,10 @@ public:
 
 public:
 	std::string						m_sName;
+
+	// Default confguration values
+	std::map<std::string, std::string> m_mDefaults;
+	std::map<std::string, std::string> m_mEnvironment;
 
 };
 
