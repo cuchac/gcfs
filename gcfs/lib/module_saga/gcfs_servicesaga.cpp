@@ -54,6 +54,12 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	for (int iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
 		vArguments.push_back(sArguments.we_wordv[iIndex]);
 	wordfree(&sArguments);
+
+	// Fill-in executable environment
+	std::vector <std::string> vEnvironment;
+	GCFS_ConfigEnvironment::values_t::iterator it;
+	for(it = pTask->m_sEnvironment.m_mValues.begin(); it != pTask->m_sEnvironment.m_mValues.end(); it++)
+		vEnvironment.push_back(it->first+"="+it->second);
 	
 	// Fill data files to send
 	std::vector <std::string> vDataFiles;
@@ -75,8 +81,10 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	sJobDescription.set_attribute(sja::description_executable, sTaskDirPath+pTask->m_sExecutable.m_sValue);
 	sJobDescription.set_attribute(sja::description_error,"error");
 	sJobDescription.set_attribute(sja::description_output, "output");
+	
 	sJobDescription.set_vector_attribute(sja::description_arguments, vArguments);
 	sJobDescription.set_vector_attribute(sja::description_file_transfer, vDataFiles);
+	sJobDescription.set_vector_attribute(sja::description_environment, vEnvironment);
 
 	// Ge to submission directory - did not found any other way to set submission dir. Chdir subejct to race conditions?
 	chdir(sSubmitDir.c_str());

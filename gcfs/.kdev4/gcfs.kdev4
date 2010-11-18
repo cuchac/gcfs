@@ -38,3 +38,6 @@ isExecutable=true
 
 [MakeBuilder]
 Number Of Jobs=1
+
+[Project]
+VersionControlSupport=kdevgit
