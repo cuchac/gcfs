@@ -44,9 +44,10 @@ public:
 	GCFS_ConfigInt 							m_iMemory;
 	GCFS_ConfigInt 							m_iProcesses;
 	GCFS_ConfigInt 							m_iTimeout;
-	GCFS_ConfigChoice							m_iService;
+	GCFS_ConfigService						m_iService;
 	GCFS_ConfigString							m_sExecutable;
 	GCFS_ConfigString							m_sArguments;
+	GCFS_ConfigEnvironment					m_sEnvironment;
 
 // Mapping of confg values for dynamic access
 	std::vector<GCFS_ConfigValue*>		m_vConfigValues;

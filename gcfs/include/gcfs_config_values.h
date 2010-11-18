@@ -59,6 +59,32 @@ public:
 	choices_t 		m_vChoices;
 };
 
+// Specific configuration values
 
+class GCFS_ConfigEnvironment: public GCFS_ConfigValue
+{
+public:
+	typedef std::map<std::string, std::string> values_t;
+
+public:
+						GCFS_ConfigEnvironment(const char* sName, const char* sDefault = NULL):GCFS_ConfigValue(sName){this->SetValue(sDefault);};
+
+	bool				SetValue(const char * sValue, size_t iOffset = 0);
+	bool				SetValue(const char* sKey, const char* sValue);
+	bool				PrintValue(std::string &buff);
+
+public:
+	values_t 		m_mValues;
+};
+
+class GCFS_ConfigService: public GCFS_ConfigChoice
+{
+public:
+						GCFS_ConfigService(const char* sName, const char* sDefault = NULL, GCFS_ConfigChoice::choices_t* pvChoices = NULL):
+															GCFS_ConfigChoice(sName, sDefault, pvChoices){this->SetValue(sDefault);};
+						
+public:
+	bool				SetValue(const char * sValue, size_t iOffset = 0);
+};
 
 #endif /*__GCFS_CONFIG_VALUES__*/

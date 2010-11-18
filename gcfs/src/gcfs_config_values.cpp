@@ -4,6 +4,10 @@
 #include <string>
 #include <stdio.h>
 #include <string.h>
+#include <wordexp.h>
+#include <gcfs.h>
+#include <gcfs_config.h>
+#include <gcfs_service.h>
 
 std::string GCFS_ConfigValue::trimStr(const std::string& Src, const std::string& c)
 {
@@ -91,4 +95,68 @@ bool GCFS_ConfigChoice::PrintValue(std::string& buff)
 	}
 
 	return true;
+}
+
+bool GCFS_ConfigEnvironment::SetValue(const char* sValue, size_t iOffset)
+{
+	if(!sValue)
+		return false;
+	
+	if(!iOffset) // Allow overwrite
+		m_mValues.clear();
+	else if(iOffset == -1 || iOffset == m_iSize) // Allow to append
+		; 
+	else // Dont allow to write in the middle
+		return false; 
+
+	std::string sNewValue = trimStr(sValue);
+
+	wordexp_t sArguments;
+	if(wordexp(sNewValue.c_str(), &sArguments, 0))
+		return false;
+	
+	for (int iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
+	{
+		// Separate key=value string into two pieces
+		char* pcSeparator = strchr(sArguments.we_wordv[iIndex], '=');
+		*pcSeparator='\0';
+		
+		printf("Argument: %s, tokens: %s, %s\n", sArguments.we_wordv[iIndex], sArguments.we_wordv[iIndex], pcSeparator+1);
+		
+		m_mValues[sArguments.we_wordv[iIndex]] = pcSeparator+1;
+	}
+	wordfree(&sArguments);
+
+	return true;
+}
+
+bool GCFS_ConfigEnvironment::SetValue(const char* sKey, const char* sValue)
+{
+	if(!sValue || !sKey)
+		return false;
+
+	std::string sNewValue = trimStr(sValue);
+
+	m_mValues[sKey]=sNewValue;
+	
+	return true;
+}
+
+bool GCFS_ConfigEnvironment::PrintValue(std::string& buff)
+{
+	values_t::iterator it;
+	for(it = m_mValues.begin(); it != m_mValues.end(); it++)
+		buff += it->first+"="+it->second+"\n";
+
+	return true;
+}
+
+bool GCFS_ConfigService::SetValue(const char* sValue, size_t iOffset)
+{	
+	bool bRet = GCFS_ConfigChoice::SetValue(sValue, iOffset);
+
+	if(!bRet)
+		return bRet;
+
+	g_sConfig.GetService(m_iValue)->customizeTask(m_pTask);
 }
