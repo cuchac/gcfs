@@ -6,10 +6,34 @@
 #### Global settings #####\n\
 [Global]\n\
 ## Path where temporary files will be stored\n\
-#dataPath = /home/joe/.local/gcfs/\n\
+#dataPath=/home/joe/.local/gcfs/\n\
+#dataPath=/tmp/gcfs/\n\
 \n\
-#### Services definitions ####\n\
-## Every category represents one service named according to category name.\n\
-#[Condor]\n\
+## List services\n\
+service=Condor\n\
+#service=Globus\n\
+\n\
+## Default service that will be used for creaed tasks\n\
+default_service=Condor\n\
+\n\n\
+#### Services configuration ####\n\
+## Every category configures one service defined above\n\
+[Condor]\n\
 ## Driver defines the grid framework to use\n\
-#driver = condor\n "
+## Currently supported only SAGA\n\
+driver=saga\n\
+\n\
+## Saga service url - URL of resource manager\n\
+service_url=condor://localhost/\n\
+\n\
+## Here you can specify default configuration values of tasks of given service\n\
+[Condor.default]\n\
+## Each 'key=value' pair sets config variable 'key' to 'value'\n\
+architecture=x86\n\
+memory=123\n\
+\n\
+## Here you can specify default environment variables\n\
+[Condor.environment]\n\
+## Each 'key=value' pair sets environment variable 'key' to 'value'\n\
+SUBMITTER=GCFS\n\
+"
