@@ -5,12 +5,15 @@
 #include <vector>
 #include <map>
 
+// Generic configuration values
+
+class GCFS_Task;
 class GCFS_ConfigValue
 {
 public:
-						GCFS_ConfigValue(const char *sName):m_sName(sName){};
+						GCFS_ConfigValue(const char *sName):m_sName(sName),m_iSize(0){};
 
-	virtual	bool				SetValue(const char * sValue) = 0;
+	virtual	bool				SetValue(const char * sValue, size_t iOffset = 0) = 0;
 	virtual	bool				PrintValue(std::string &buff) = 0;
 
 	static 	std::string 	trimStr(const std::string& Src, const std::string& c = " \r\n");
@@ -26,7 +29,7 @@ class GCFS_ConfigInt: public GCFS_ConfigValue
 public:
 						GCFS_ConfigInt(const char *sName, const char *sDefault):GCFS_ConfigValue(sName){this->SetValue(sDefault);};
 
-	bool				SetValue(const char * sValue);
+	bool				SetValue(const char * sValue, size_t iOffset = 0);
 	bool				PrintValue(std::string &buff);
 
 public:
@@ -38,7 +41,7 @@ class GCFS_ConfigString: public GCFS_ConfigValue
 public:
 						GCFS_ConfigString(const char *sName, const char *sDefault):GCFS_ConfigValue(sName){this->SetValue(sDefault);};
 
-	bool				SetValue(const char * sValue);
+	bool				SetValue(const char * sValue, size_t iOffset = 0);
 	bool				PrintValue(std::string &buff);
 
 public:
@@ -53,7 +56,7 @@ public:
 public:
 						GCFS_ConfigChoice(const char* sName, const char* sDefault = NULL, GCFS_ConfigChoice::choices_t* pvChoices = NULL);
 
-	bool				SetValue(const char * sValue);
+	bool				SetValue(const char * sValue, size_t iOffset = 0);
 	bool				PrintValue(std::string &buff);
 
 public:

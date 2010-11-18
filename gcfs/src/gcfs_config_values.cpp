@@ -18,7 +18,7 @@ std::string GCFS_ConfigValue::trimStr(const std::string& Src, const std::string&
 	return Src.substr(p1, (p2-p1)+1);
 }
 
-bool GCFS_ConfigInt::SetValue(const char * sValue)
+bool GCFS_ConfigInt::SetValue(const char* sValue, size_t iOffset)
 {
 	m_iValue = atoi(sValue);
 
@@ -35,7 +35,7 @@ bool GCFS_ConfigInt::PrintValue(std::string& buff)
 }
 
 
-bool GCFS_ConfigString::SetValue(const char * sValue)
+bool GCFS_ConfigString::SetValue(const char* sValue, size_t iOffset)
 {
 	m_sValue = trimStr(sValue);
 
@@ -61,8 +61,11 @@ GCFS_ConfigChoice::GCFS_ConfigChoice(const char *sName, const char *sDefault, ch
 		m_iValue = 0;
 };
 
-bool GCFS_ConfigChoice::SetValue(const char * sValue)
+bool GCFS_ConfigChoice::SetValue(const char* sValue, size_t iOffset)
 {
+	if(!sValue)
+		return false;
+	
 	std::string value = trimStr(sValue);
 	
 	int iVal = -1;
