@@ -49,14 +49,14 @@ find_path(SAGA_INCLUDE_DIR
 
 if (SAGA_INCLUDE_DIR)
 
-    set(SAGA_INCLUDE_DIR "${SAGA_INCLUDE_DIR}/saga/")
-
     # retrieve version information from the header
 
-    file(READ "${SAGA_INCLUDE_DIR}/saga-config.hpp" SAGA_COMMON_H_FILE)
+    file(READ "${SAGA_INCLUDE_DIR}/saga/saga-config.hpp" SAGA_COMMON_H_FILE)
 
     string(REGEX REPLACE ".*#define[ \t]+SAGA_VERSION_MAJOR[ \t]+([0-9]+).*" "\\1" SAGA_VERSION_MAJOR "${SAGA_COMMON_H_FILE}")
     string(REGEX REPLACE ".*#define[ \t]+SAGA_VERSION_MINOR[ \t]+([0-9]+).*" "\\1" SAGA_VERSION_MINOR "${SAGA_COMMON_H_FILE}")
+
+    set(SAGA_INCLUDE_DIR ${SAGA_INCLUDE_DIR}/saga/ ${SAGA_INCLUDE_DIR}/)
 
     # search for library
 
