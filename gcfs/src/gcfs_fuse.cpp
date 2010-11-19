@@ -628,10 +628,6 @@ int init_fuse(int argc, char *argv[])
 	g_sConfig.m_sPermissions.m_iUid = getuid();
 	g_sConfig.m_sPermissions.m_iGid = getgid();
 	
-	char * psRealMontPath = realpath(mountpoint, NULL);
-	g_sConfig.m_sMountDir = psRealMontPath;
-	free(psRealMontPath);
-	
 	printf("User: %d, Group: %d\n", getuid(), getgid());
 
 	fuse_opt_add_arg(&args, "-o");
@@ -641,6 +637,10 @@ int init_fuse(int argc, char *argv[])
 	
 	if((ch = fuse_mount(mountpoint, &args)) != NULL) {
 		struct fuse_session *se;
+
+		char * psRealMontPath = realpath(mountpoint, NULL);
+		g_sConfig.m_sMountDir = psRealMontPath;
+		free(psRealMontPath);
 
 		// Chdir to data directory to avoid "access denied" errors when CWD is not accessible by regular users
 		chdir(g_sConfig.m_sDataDir.c_str());
