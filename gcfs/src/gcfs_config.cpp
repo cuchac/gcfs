@@ -74,7 +74,7 @@ bool GCFS_Config::loadConfig()
 		printf("To actualy use Gcfs, you have to modify the configuration file\nNow exiting.\n");
 		
 		// Config file does not exists
-		GCFS_Utils::mkdirRecursive(sConfigPath.substr(sConfigPath.rfind('/')).c_str());
+		GCFS_Utils::mkdirRecursive(sConfigPath.substr(0, sConfigPath.rfind('/')).c_str());
 
 		int hFile = creat(sConfigPath.c_str(), S_IRUSR | S_IWUSR);
 		write(hFile, GCFS_CONFIG_DEFAULTCONFIG, ARRAYSIZE(GCFS_CONFIG_DEFAULTCONFIG)-1);
