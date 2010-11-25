@@ -49,7 +49,7 @@ bool GCFS_Config::loadConfig()
 
 			GCFS_Service* pNewService = AddService(sDriver, it->second);
 
-			if(!pNewService->configure(ini))
+			if(!pNewService || !pNewService->configure(ini))
 				printf("Failed configuration of %s service!\n", it->second);
 			
 			printf("Adding service: %s, driver:%s\n", it->second, sDriver);
