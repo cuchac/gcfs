@@ -108,10 +108,14 @@ bool GCFS_Config::getConfigFile(std::string &sPath)
 GCFS_Service* GCFS_Config::AddService(const char * sDriver, const char * sName)
 {
 	GCFS_Service* tmpService = GCFS_Service::createService(sDriver, sName);
-	m_vServices.push_back(tmpService);
-	m_vServiceNames.push_back(sName);
-	m_mNameToService[sName] = m_vServices.size()-1;
 	
+	if(tmpService)
+	{
+		m_vServices.push_back(tmpService);
+		m_vServiceNames.push_back(sName);
+		m_mNameToService[sName] = m_vServices.size()-1;
+	}
+
 	return tmpService;
 }
 
