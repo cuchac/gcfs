@@ -20,15 +20,6 @@ bool GCFS_Config::loadConfig()
 		
 		ini.LoadFile(sConfigPath.c_str());
 
-		m_sDataDir = ini.GetValue("Global", "data_path", "");
-		// Make sure path ends with slash
-		if(*(m_sDataDir.rbegin()) != '/')
-			m_sDataDir += "/";
-
-		// Ensure directory exists
-		//GCFS_Utils::rmdirRecursive(m_sDataDir.c_str()); // Too dangerous to delete whole dir
-		GCFS_Utils::mkdirRecursive(m_sDataDir.c_str());
-
 		CSimpleIniA::TKeyVal::const_iterator it;
 		const CSimpleIniA::TKeyVal* pSectionValues = ini.GetSection("Global");
 		if(!pSectionValues)
@@ -36,6 +27,21 @@ bool GCFS_Config::loadConfig()
 			printf("Configure error: Mandatory section 'Global' not found!\nExiting now.\n");
 			return false;
 		}
+
+		m_sDataDir = ini.GetValue("Global", "data_path", "");
+		if(m_sDataDir.empty())
+                {
+                        printf("Configure error: Mandatory value 'data_path' in 'Global' section not found!\nExiting now.\n");
+                        return false;
+                }
+
+		// Make sure path ends with slash
+		if(*(m_sDataDir.rbegin()) != '/')
+			m_sDataDir += "/";
+
+		// Ensure directory exists
+		//GCFS_Utils::rmdirRecursive(m_sDataDir.c_str()); // Too dangerous to delete whole dir
+		GCFS_Utils::mkdirRecursive(m_sDataDir.c_str());
 		
 		for(it = pSectionValues->begin(); it != pSectionValues->end(); ++it)
 		{

@@ -642,6 +642,7 @@ int init_fuse(int argc, char *argv[])
 
 		// Chdir to data directory to avoid "access denied" errors when CWD is not accessible by regular users
 		chdir(g_sConfig.m_sDataDir.c_str());
+		printf("Moving to data dir: %s\n", g_sConfig.m_sDataDir.c_str());
 
 		se = fuse_lowlevel_new(&args, &gcfs_oper,
 				       sizeof(gcfs_oper), NULL);

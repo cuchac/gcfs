@@ -6,8 +6,8 @@
 #### Global settings #####\n\
 [Global]\n\
 ## Path where temporary files will be stored\n\
-#dataPath=/home/joe/.local/gcfs/\n\
-#dataPath=/tmp/gcfs/\n\
+#data_path=/home/joe/.local/gcfs/\n\
+#data_path=/tmp/gcfs/\n\
 \n\
 ## List services\n\
 service=Condor\n\
