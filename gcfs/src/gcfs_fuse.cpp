@@ -638,9 +638,7 @@ int init_fuse(int argc, char *argv[])
 	if((ch = fuse_mount(mountpoint, &args)) != NULL) {
 		struct fuse_session *se;
 
-		char * psRealMontPath = realpath(mountpoint, NULL);
-		g_sConfig.m_sMountDir = psRealMontPath;
-		free(psRealMontPath);
+		g_sConfig.m_sMountDir = mountpoint;
 
 		// Chdir to data directory to avoid "access denied" errors when CWD is not accessible by regular users
 		chdir(g_sConfig.m_sDataDir.c_str());
