@@ -331,8 +331,9 @@ static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 		fi->direct_io = 1;
 
 		char *buff = new char[size];
-		lseek(pFile->m_hFile, off, SEEK_SET);
-		size = read(pFile->m_hFile, buff, size);
+		int hFile = pFile->getHandle();
+		lseek(hFile, off, SEEK_SET);
+		size = read(hFile, buff, size);
 
 		fuse_reply_buf(req, buff, size);
 		delete [] buff;
@@ -376,8 +377,9 @@ static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 	if(ino > g_sTasks.m_uiFirstFileInode)
 	{
 		GCFS_Task::File *pFile = (GCFS_Task::File *)fi->fh;
-		lseek(pFile->m_hFile, off, SEEK_SET);
-		size = write(pFile->m_hFile, buf, size);
+		int hFile = pFile->getHandle();
+		lseek(hFile, off, SEEK_SET);
+		size = write(hFile, buf, size);
 
 		fuse_reply_write(req, size);
 	}

@@ -72,7 +72,7 @@ bool GCFS_Task::deleteDataFile(const char * name)
 	if(!pFile)
 		return false;
 
-	close(pFile->m_hFile);
+	pFile->closeHandle();
 
 	unlink(pFile->m_sPath.c_str());
 
@@ -124,7 +124,7 @@ bool GCFS_Task::deleteResultFile(const char * name)
 	if(!pFile)
 		return false;
 
-	close(pFile->m_hFile);
+	pFile->closeHandle();
 
 	unlink(pFile->m_sPath.c_str());
 
@@ -142,9 +142,7 @@ GCFS_Task::File* GCFS_Task::getResultFile(const char * name)
 	GCFS_Task::Files::iterator it;
 	if((it = m_mResultFiles.find(name)) != m_mResultFiles.end())
 	{
-		// If handle not opened, open it
-		if(!it->second->m_hFile)
-			it->second->m_hFile = open(it->second->m_sPath.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+		it->second->getHandle();
 		
 		return it->second;
 	}
@@ -166,6 +164,32 @@ GCFS_Task::File* GCFS_Task::getExecutableFile()
 		return NULL;
 
 	return it->second;
+}
+
+
+// GCFS_Task::File class
+
+int GCFS_Task::File::create()
+{
+	// If handle not opened, open it
+	if(!m_hFile)
+		m_hFile = open(m_sPath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR);
+}
+
+int GCFS_Task::File::getHandle()
+{
+	// If handle not opened, open it
+	if(!m_hFile)
+		m_hFile = open(m_sPath.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+}
+
+void GCFS_Task::File::closeHandle()
+{
+	if(m_hFile)
+	{
+		close(m_hFile);
+		m_hFile = 0;
+	}
 }
 
 // Task Manager
@@ -252,10 +276,7 @@ GCFS_Task::File* GCFS_TaskManager::getInodeFile(int iInode)
 	std::map<int, GCFS_Task::File *>::iterator it;
 	if((it = m_mInodesOwner.find(iInode)) != m_mInodesOwner.end())
 	{
-		// If handle not opened, open it
-		if(!it->second->m_hFile)
-			it->second->m_hFile = open(it->second->m_sPath.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
-		
+		it->second->getHandle();
 		return it->second;
 	}
 	else
@@ -274,7 +295,7 @@ GCFS_Task::File* GCFS_TaskManager::createFile(bool bCreate)
 	tmp->m_iInode = iInode;
 
 	if(bCreate)
-		tmp->m_hFile = open(tmp->m_sPath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR);
+		tmp->create();
 
 	return tmp;
 }

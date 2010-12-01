@@ -50,7 +50,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	std::string sExecutable = sSubmitDir+basename((char*)pTask->m_sExecutable.m_sValue.c_str());
 	link(pExecutableFile->m_sPath.c_str(), sExecutable.c_str());
 	chmod(sExecutable.c_str(), 0777);
-	close(pExecutableFile->m_hFile);
+	pExecutableFile->closeHandle();
 
 	// Fill-in executable parameters - parse arguments string into parameters
 	std::vector <std::string> vArguments;
@@ -185,8 +185,9 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 	if(sMessage)
 	{
 		GCFS_Task::File* error = pTask->createResultFile("error");
-		
-		write(error->m_hFile, sMessage, strlen(sMessage));
+
+		int hFile = error->getHandle();
+		write(hFile, sMessage, strlen(sMessage));
 
 		GCFS_Utils::rmdirRecursive(sSubmitDir.c_str());
 		

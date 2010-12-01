@@ -61,11 +61,19 @@ public:
 	class File {
 	public:
 								File():m_iInode(0), m_hFile(0), m_pTask(NULL){};
+
+	public:
+		int					create();
+		int					getHandle();
+		void					closeHandle();
+		
 	public:
 		unsigned int		m_iInode;
 		std::string			m_sPath;
-		int					m_hFile;
 		GCFS_Task*			m_pTask;
+
+	private:
+		int					m_hFile;
 	};
 
 	typedef std::map<std::string, File*> Files;
