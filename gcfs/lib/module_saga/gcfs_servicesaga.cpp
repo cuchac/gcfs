@@ -176,7 +176,16 @@ bool GCFS_ServiceSaga::waitForTask(GCFS_Task* pTask)
 {
 	SagaTaskData* pTaskData = (SagaTaskData*)pTask->m_pServiceData;
 
-	pTaskData->m_sJob.wait();
+	while(true)
+	{
+		bool bFinished = pTaskData->m_sJob.wait(1.0);
+
+		if(bFinished)
+			break;
+
+		if(pTask->m_eStatus == GCFS_Task::eSuspended)
+			return false;
+	}
 
 	return true;
 }
