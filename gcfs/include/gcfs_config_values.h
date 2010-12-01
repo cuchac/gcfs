@@ -13,6 +13,7 @@ class GCFS_ConfigValue
 {
 public:
 						GCFS_ConfigValue(const char *sName):m_sName(sName),m_iSize(0){};
+	virtual					~GCFS_ConfigValue(){};
 
 	virtual	bool				SetValue(const char * sValue, size_t iOffset = 0) = 0;
 	virtual	bool				PrintValue(std::string &buff) = 0;

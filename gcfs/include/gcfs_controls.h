@@ -10,6 +10,7 @@ class GCFS_Control
 {
 public:
 						GCFS_Control(const char *sName):m_sName(sName){};
+	virtual					~GCFS_Control(){};
 
 	virtual	bool	write(GCFS_Task* pTask, const char * sValue) = 0;
 	virtual	bool	read(GCFS_Task* pTask, std::string &buff) = 0;

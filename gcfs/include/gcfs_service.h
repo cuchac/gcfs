@@ -14,6 +14,7 @@ class GCFS_Service
 {
 public:
 										GCFS_Service(const char * sName):m_sName(sName){};
+	virtual									~GCFS_Service(){};
 
 	// Configure service from config file
 	virtual bool					configure(CSimpleIniA& pConfig);
