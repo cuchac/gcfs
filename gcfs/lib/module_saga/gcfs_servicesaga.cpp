@@ -87,22 +87,31 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	snprintf(sProcesses, ARRAYSIZE(sProcesses), "%d", pTask->m_iProcesses.m_iValue);
 
 	saga::job::description sJobDescription;
-	sJobDescription.set_attribute(sja::description_interactive, sa::common_false);
-	sJobDescription.set_attribute(sja::description_executable, sExecutable);
-	sJobDescription.set_attribute(sja::description_error,"error");
-	sJobDescription.set_attribute(sja::description_output, "output");
-	sJobDescription.set_attribute(sja::description_number_of_processes, sProcesses);
 	
-	sJobDescription.set_vector_attribute(sja::description_arguments, vArguments);
-	sJobDescription.set_vector_attribute(sja::description_file_transfer, vDataFiles);
-	sJobDescription.set_vector_attribute(sja::description_environment, vEnvironment);
+	try
+	{
+		sJobDescription.set_attribute(sja::description_interactive, sa::common_false);
+		sJobDescription.set_attribute(sja::description_executable, sExecutable);
+		sJobDescription.set_attribute(sja::description_error,"error");
+		sJobDescription.set_attribute(sja::description_output, "output");
+		sJobDescription.set_attribute(sja::description_number_of_processes, sProcesses);
+
+		sJobDescription.set_vector_attribute(sja::description_arguments, vArguments);
+		sJobDescription.set_vector_attribute(sja::description_file_transfer, vDataFiles);
+		sJobDescription.set_vector_attribute(sja::description_environment, vEnvironment);
+	}
+	catch(std::exception& e)
+	{
+		return finishTask(pTask, e.what());
+	}
 
 	// Go to submission directory - did not find any other way to set submission dir. Chdir subject to race conditions?
 	chdir(sSubmitDir.c_str());
-	
+
 	SagaTaskData * pTaskData = new SagaTaskData();
 	pTaskData->m_sCallback.setTask(pTask);
 	pTaskData->m_sCallback.setService(this);
+	
 
 	// Start Submission
 	// If running under root, change credentials to submiting user
@@ -117,15 +126,25 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 		setresuid(pTask->m_sPermissions.m_iUid, pTask->m_sPermissions.m_iUid, 0);
 #endif
 	}
-	
-	pTaskData->m_sService = saga::job::service(saga::url(m_sServiceUrl));
-	
-	pTaskData->m_sJob = pTaskData->m_sService.create_job(sJobDescription);
 
-	pTaskData->m_sJob.add_callback(saga::job::metrics::state, boost::bind(&SagaCallback::callbackStatus, pTaskData->m_sCallback, _1, _2, _3));
-	
-	// job is in ’New’ state here, we need to run it
-	pTaskData->m_sJob.run();
+	try
+	{
+		pTaskData->m_sService = saga::job::service(saga::url(m_sServiceUrl));
+
+		pTaskData->m_sJob = pTaskData->m_sService.create_job(sJobDescription);
+
+		pTaskData->m_sJob.add_callback(saga::job::metrics::state, boost::bind(&SagaCallback::callbackStatus, pTaskData->m_sCallback, _1, _2, _3));
+
+		// job is in ’New’ state here, we need to run it
+		pTaskData->m_sJob.run();
+	}
+	catch(std::exception& e)
+	{
+		// Run back to previous working dir
+		chdir(g_sConfig.m_sDataDir.c_str());
+
+		return finishTask(pTask, e.what());
+	}
 
 	// Run back to previous working dir
 	chdir(g_sConfig.m_sDataDir.c_str());
@@ -182,14 +201,22 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 	
 	if(sMessage)
 	{
+		// Write error into error file
 		GCFS_Task::File* error = pTask->createResultFile("error");
 
 		int hFile = error->getHandle();
 		write(hFile, sMessage, strlen(sMessage));
 
+		// Also announce on stdout for debug
+		printf("Saga Error: %s\n", sMessage);
+
+		// Get rid of submit directory
 		GCFS_Utils::rmdirRecursive(sSubmitDir.c_str());
+
+		// Set correct status
+		pTask->m_eStatus = GCFS_Task::eFailed;
 		
-		return true;
+		return false;
 	}
 
 	// Remove executable from submitdir to prevent copying to result dir
