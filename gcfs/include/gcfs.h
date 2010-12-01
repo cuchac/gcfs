@@ -23,4 +23,4 @@ extern GCFS_Config g_sConfig;
 // Tasks
 extern GCFS_TaskManager g_sTasks;
 
-#endif /*__GCFS__*/ 
+#endif /*__GCFS__*/

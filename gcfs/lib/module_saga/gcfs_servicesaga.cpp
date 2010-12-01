@@ -57,7 +57,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	wordexp_t sArguments;
 	if(wordexp(pTask->m_sArguments.m_sValue.c_str(), &sArguments, 0))
 		return false;
-	for (int iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
+	for (uint iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
 		vArguments.push_back(sArguments.we_wordv[iIndex]);
 	wordfree(&sArguments);
 
@@ -175,8 +175,6 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 {
 	printf("Finishing task!!!!\n");
 	
-	SagaTaskData* pTaskData = (SagaTaskData*)pTask->m_pServiceData;
-	
 	std::string sSubmitDir = g_sConfig.m_sDataDir+pTask->m_sName+"/";
 
 	delete (SagaTaskData*)pTask->m_pServiceData;
@@ -201,7 +199,7 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 	DIR* pDir = opendir(sSubmitDir.c_str());
 	dirent* pDirFile;
 
-	while(pDirFile = readdir(pDir))
+	while((pDirFile = readdir(pDir)))
 	{
 		std::string sFilePath = sSubmitDir+pDirFile->d_name;
 		
@@ -217,4 +215,6 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 	closedir(pDir);
 
 	rmdir(sSubmitDir.c_str());
+
+	return true;
 }

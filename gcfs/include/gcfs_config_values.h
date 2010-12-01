@@ -1,6 +1,7 @@
 #ifndef __GCFS_CONFIG_VALUES__
 #define __GCFS_CONFIG_VALUES__
 
+#include <stdlib.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -60,7 +61,7 @@ public:
 	bool				PrintValue(std::string &buff);
 
 public:
-	int				m_iValue;
+	uint				m_iValue;
 	choices_t 		m_vChoices;
 };
 

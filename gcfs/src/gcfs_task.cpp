@@ -7,6 +7,9 @@
 #include <libgen.h>
 
 GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
+	m_eStatus(eNew),
+	m_pServiceData(NULL),
+
 	m_iMemory("memory", "1024"),
 	m_iProcesses("processes", "1"),
 	m_iTimeout("timeout", "3600"),
@@ -14,9 +17,8 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_sExecutable("executable", "./data/executable"),
 	m_sArguments("arguments", ""),
 	m_sEnvironment("environment"),
-	m_eStatus(eNew),
-	m_sPermissions(),
-	m_pServiceData(NULL)
+	
+	m_sPermissions()
 {
 	assignVariable(&m_iMemory);
 	assignVariable(&m_iProcesses);
@@ -51,7 +53,7 @@ GCFS_Task::File* GCFS_Task::createDataFile(const char * name)
 {
 	File *pFile;
 	
-	if(pFile = getDataFile(name))
+	if((pFile = getDataFile(name)))
 		return pFile;
 	
 	pFile = g_sTasks.createFile();
@@ -103,7 +105,7 @@ GCFS_Task::File* GCFS_Task::createResultFile(const char * name, bool bCreate)
 {
 	File *pFile;
 
-	if(pFile = getResultFile(name))
+	if((pFile = getResultFile(name)))
 		return pFile;
 
 	pFile = g_sTasks.createFile(bCreate);
@@ -174,6 +176,8 @@ int GCFS_Task::File::create()
 	// If handle not opened, open it
 	if(!m_hFile)
 		m_hFile = open(m_sPath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR);
+
+	return m_hFile;
 }
 
 int GCFS_Task::File::getHandle()
@@ -181,6 +185,8 @@ int GCFS_Task::File::getHandle()
 	// If handle not opened, open it
 	if(!m_hFile)
 		m_hFile = open(m_sPath.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+
+	return m_hFile;
 }
 
 void GCFS_Task::File::closeHandle()
@@ -225,6 +231,8 @@ bool GCFS_TaskManager::deleteTask(const char * sName)
 		m_vTasks.erase(m_vTasks.begin()+iIndex);
 		m_mTaskNames.erase(sName);
 	}
+	
+	return true;
 }
 
 size_t GCFS_TaskManager::getTaskCount()
@@ -269,6 +277,7 @@ bool GCFS_TaskManager::putInode(int iInode)
 		return false;
 
 	m_mInodesOwner.erase(it);
+	return true;
 }
 
 GCFS_Task::File* GCFS_TaskManager::getInodeFile(int iInode)

@@ -22,7 +22,7 @@ public:
 		eAborted, // User aborted
 		eFailed, // Failed
 		eFinished, // succesfully finished
-		eSuspended, // suspended
+		eSuspended // suspended
 	} Status;
 
 public:
@@ -60,7 +60,7 @@ private:
 public:
 	class File {
 	public:
-								File():m_iInode(0), m_hFile(0), m_pTask(NULL){};
+								File():m_iInode(0), m_pTask(NULL), m_hFile(0){};
 
 	public:
 		int					create();

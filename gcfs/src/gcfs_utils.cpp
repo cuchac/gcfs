@@ -38,6 +38,7 @@ bool GCFS_Utils::getHomePath(std::string &buffer)
 		buffer = getpwuid(getuid())->pw_dir;
 
 #endif
+	return true;
 }
 
 bool GCFS_Utils::mkdirRecursive(const char *path)
@@ -59,6 +60,8 @@ bool GCFS_Utils::mkdirRecursive(const char *path)
                 }
         if(access(opath, F_OK))         /* if path is not terminated with / */
                 mkdir(opath, S_IRWXU | S_IRWXG | S_IRWXO);
+		  
+	return true;
 }
 
 int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)

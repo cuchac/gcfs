@@ -48,7 +48,7 @@ private:
 		eStartAndWait,
 		eWait,
 		eAbort,
-		eSuspend,
+		eSuspend
 	};
 
 public:

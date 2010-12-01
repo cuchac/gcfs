@@ -11,9 +11,9 @@
 
 std::string GCFS_ConfigValue::trimStr(const std::string& Src, const std::string& c)
 {
-	int p2 = Src.find_last_not_of(c);
+	uint p2 = Src.find_last_not_of(c);
 	if (p2 == std::string::npos) return std::string();
-	int p1 = Src.find_first_not_of(c);
+	uint p1 = Src.find_first_not_of(c);
 	if (p1 == std::string::npos) p1 = 0;
 	return Src.substr(p1, (p2-p1)+1);
 }
@@ -59,7 +59,7 @@ GCFS_ConfigChoice::GCFS_ConfigChoice(const char *sName, const char *sDefault, ch
 		this->SetValue(sDefault);
 	else
 		m_iValue = 0;
-};
+}
 
 bool GCFS_ConfigChoice::SetValue(const char* sValue, size_t iOffset)
 {
@@ -68,8 +68,8 @@ bool GCFS_ConfigChoice::SetValue(const char* sValue, size_t iOffset)
 	
 	std::string value = trimStr(sValue);
 	
-	int iVal = -1;
-	for(int iIndex = 0; iIndex < m_vChoices.size(); iIndex ++)
+	uint iVal = -1;
+	for(uint iIndex = 0; iIndex < m_vChoices.size(); iIndex ++)
 		if(strcasecmp(m_vChoices[iIndex].c_str(), value.c_str()) == 0)
 			iVal = iIndex;
 
@@ -83,7 +83,7 @@ bool GCFS_ConfigChoice::SetValue(const char* sValue, size_t iOffset)
 
 bool GCFS_ConfigChoice::PrintValue(std::string& buff)
 {
-	for(int iIndex = 0; iIndex < m_vChoices.size(); iIndex ++)
+	for(uint iIndex = 0; iIndex < m_vChoices.size(); iIndex ++)
 	{
 		if(iIndex > 0)
 			buff += ", ";
@@ -107,7 +107,7 @@ bool GCFS_ConfigEnvironment::SetValue(const char* sValue, size_t iOffset)
 	
 	if(!iOffset) // Allow overwrite
 		m_mValues.clear();
-	else if(iOffset == -1 || iOffset == m_iSize) // Allow to append
+	else if(iOffset == (size_t)-1 || iOffset == m_iSize) // Allow to append
 		; 
 	else // Dont allow to write in the middle
 		return false; 
@@ -118,7 +118,7 @@ bool GCFS_ConfigEnvironment::SetValue(const char* sValue, size_t iOffset)
 	if(wordexp(sNewValue.c_str(), &sArguments, 0))
 		return false;
 	
-	for (int iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
+	for (uint iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
 	{
 		// Separate key=value string into two pieces
 		char* pcSeparator = strchr(sArguments.we_wordv[iIndex], '=');
@@ -162,4 +162,6 @@ bool GCFS_ConfigService::SetValue(const char* sValue, size_t iOffset)
 		return bRet;
 
 	g_sConfig.GetService(m_iValue)->customizeTask(m_pTask);
+	
+	return true;
 }

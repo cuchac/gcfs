@@ -51,7 +51,7 @@ GCFS_ControlControl::GCFS_ControlControl():GCFS_Control("control")
 
 bool GCFS_ControlControl::read(GCFS_Task* pTask, std::string &buff)
 {
-    for (int iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
+    for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
     {
         if (iIndex > 0)
             buff += ", ";
@@ -67,7 +67,7 @@ bool GCFS_ControlControl::write(GCFS_Task* pTask, const char * sValue)
     std::string value = trimStr(sValue);
 
     int iVal = -1;
-    for (int iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
+    for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
         if (strcasecmp(m_vCommands[iIndex], value.c_str()) == 0)
             iVal = iIndex;
 
