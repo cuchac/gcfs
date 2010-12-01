@@ -4,11 +4,12 @@
 #include <gcfs_config.h>
 #include <gcfs_utils.h>
 
+#include <string.h>
 #include <stdio.h>
 #include <saga/saga.hpp>
 #include <dirent.h>
 #include <wordexp.h>
-#include <libgen.h>
+
 
 namespace sa  = saga::attributes;
 namespace sja = saga::job::attributes;
@@ -38,14 +39,18 @@ bool GCFS_ServiceSaga::configure(CSimpleIniA& pConfig)
 
 bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 {
-	// Prepare directories for submission
-	std::string sTaskDirPath = g_sConfig.m_sMountDir+"/"+pTask->m_sName+"/";
-
 	std::string sSubmitDir = g_sConfig.m_sDataDir+pTask->m_sName+"/";
 	mkdir(sSubmitDir.c_str(), 0777);
 	
 	// Allow world to write into submission dir - security suicide but necessary for non-root Condor
 	chmod(sSubmitDir.c_str(), 0777);
+
+	//Link executable into submit directory
+	GCFS_Task::File* pExecutableFile = pTask->getExecutableFile();
+	std::string sExecutable = sSubmitDir+basename((char*)pTask->m_sExecutable.m_sValue.c_str());
+	link(pExecutableFile->m_sPath.c_str(), sExecutable.c_str());
+	chmod(sExecutable.c_str(), 0777);
+	close(pExecutableFile->m_hFile);
 
 	// Fill-in executable parameters - parse arguments string into parameters
 	std::vector <std::string> vArguments;
@@ -83,7 +88,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 
 	saga::job::description sJobDescription;
 	sJobDescription.set_attribute(sja::description_interactive, sa::common_false);
-	sJobDescription.set_attribute(sja::description_executable, sTaskDirPath+pTask->m_sExecutable.m_sValue);
+	sJobDescription.set_attribute(sja::description_executable, sExecutable);
 	sJobDescription.set_attribute(sja::description_error,"error");
 	sJobDescription.set_attribute(sja::description_output, "output");
 	sJobDescription.set_attribute(sja::description_number_of_processes, sProcesses);
@@ -92,7 +97,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	sJobDescription.set_vector_attribute(sja::description_file_transfer, vDataFiles);
 	sJobDescription.set_vector_attribute(sja::description_environment, vEnvironment);
 
-	// Ge to submission directory - did not found any other way to set submission dir. Chdir subejct to race conditions?
+	// Go to submission directory - did not find any other way to set submission dir. Chdir subject to race conditions?
 	chdir(sSubmitDir.c_str());
 	
 	SagaTaskData * pTaskData = new SagaTaskData();
@@ -169,7 +174,10 @@ bool isFile(const char* sPath)
 bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 {
 	printf("Finishing task!!!!\n");
+	
 	SagaTaskData* pTaskData = (SagaTaskData*)pTask->m_pServiceData;
+	
+	std::string sSubmitDir = g_sConfig.m_sDataDir+pTask->m_sName+"/";
 
 	delete (SagaTaskData*)pTask->m_pServiceData;
 	pTask->m_pServiceData = 0;
@@ -179,10 +187,15 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 		GCFS_Task::File* error = pTask->createResultFile("error");
 		
 		write(error->m_hFile, sMessage, strlen(sMessage));
+
+		GCFS_Utils::rmdirRecursive(sSubmitDir.c_str());
+		
 		return true;
 	}
 
-	std::string sSubmitDir = g_sConfig.m_sDataDir+pTask->m_sName+"/";
+	// Remove executable from submitdir to prevent copying to result dir
+	std::string sExecutable = sSubmitDir+basename((char*)pTask->m_sExecutable.m_sValue.c_str());
+	unlink(sExecutable.c_str());
 
 	DIR* pDir = opendir(sSubmitDir.c_str());
 	dirent* pDirFile;
