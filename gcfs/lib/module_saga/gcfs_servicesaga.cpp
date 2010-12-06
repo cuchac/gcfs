@@ -192,6 +192,34 @@ bool GCFS_ServiceSaga::waitForTask(GCFS_Task* pTask)
 	return true;
 }
 
+bool GCFS_ServiceSaga::abortTask(GCFS_Task* pTask)
+{
+	if(pTask->m_eStatus == GCFS_Task::eRunning || pTask->m_eStatus == GCFS_Task::eSuspended || pTask->m_eStatus == GCFS_Task::eSubmitted)
+	{
+		SagaTaskData* pTaskData = (SagaTaskData*)pTask->m_pServiceData;
+
+		try{
+			pTaskData->m_sJob.cancel();
+		}
+		catch(std::exception& e)
+		{
+			printf("%s\n", e.what());
+			return false;
+		}
+	}
+
+	return GCFS_Service::abortTask(pTask);
+}
+
+
+bool GCFS_ServiceSaga::deleteTask(GCFS_Task* pTask)
+{
+	abortTask();
+	
+	return true;
+}
+
+
 bool isFile(const char* sPath)
 {
 	struct stat sFileStat;

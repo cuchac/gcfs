@@ -28,8 +28,10 @@ public:
 
 public:
 	// Public module API for task submission
-	virtual	bool					submitTask(GCFS_Task* pTask) = 0;
-	virtual	bool					waitForTask(GCFS_Task* pTask) = 0;
+	virtual	bool					submitTask(GCFS_Task* pTask);
+	virtual	bool					waitForTask(GCFS_Task* pTask);
+	virtual	bool					abortTask(GCFS_Task* pTask);
+	virtual	bool					deleteTask(GCFS_Task* pTask);
 
 	virtual	GCFS_Task::Status	getTaskStatus(GCFS_Task* pTask);
 

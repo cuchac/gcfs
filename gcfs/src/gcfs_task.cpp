@@ -5,6 +5,7 @@
 #include <gcfs_controls.h>
 #include <string.h>
 #include <libgen.h>
+#include <gcfs_service.h>
 
 GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_eStatus(eNew),
@@ -36,6 +37,14 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 
 	// Set default service
 	m_iService.SetValue(g_sConfig.m_sDefaultService.c_str());
+}
+
+GCFS_Task::~GCFS_Task()
+{
+	GCFS_Service* pService = g_sConfig.GetService(m_iService);
+
+	if(pService)
+		pService->deleteTask(this);
 }
 
 bool GCFS_Task::isFinished()
@@ -80,17 +89,10 @@ bool GCFS_Task::deleteDataFile(const char * name)
 	if(!pFile)
 		return false;
 
-	pFile->closeHandle();
-
-	unlink(pFile->m_sPath.c_str());
-
-	g_sTasks.putInode(pFile->m_iInode);
-
-	delete pFile;
-
 	m_mDataFiles.erase(name);
+	m_mInodeToDataFiles.erase(pFile->m_iInode);
 
-	return true;
+	return g_sTasks.deleteFile(pFile);
 }
 
 GCFS_Task::File* GCFS_Task::getDataFile(const char * name)
@@ -132,17 +134,10 @@ bool GCFS_Task::deleteResultFile(const char * name)
 	if(!pFile)
 		return false;
 
-	pFile->closeHandle();
-
-	unlink(pFile->m_sPath.c_str());
-
-	g_sTasks.putInode(pFile->m_iInode);
-
-	delete pFile;
-
 	m_mResultFiles.erase(name);
+	m_mInodeToResultFiles.erase(pFile->m_iInode);
 
-	return true;
+	return g_sTasks.deleteFile(pFile);
 }
 
 GCFS_Task::File* GCFS_Task::getResultFile(const char * name)
@@ -184,6 +179,14 @@ int GCFS_Task::File::create()
 		m_hFile = open(m_sPath.c_str(), O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR);
 
 	return m_hFile;
+}
+
+void GCFS_Task::File::unlink()
+{
+	// If handle opened, close it
+	closeHandle();
+
+	::unlink(m_sPath.c_str());
 }
 
 int GCFS_Task::File::getHandle()
@@ -313,6 +316,20 @@ GCFS_Task::File* GCFS_TaskManager::createFile(bool bCreate)
 		tmp->create();
 
 	return tmp;
+}
+
+GCFS_Task::File* GCFS_TaskManager::deleteFile(GCFS_Task::File *pFile)
+{
+	if(!pFile)
+		return false;
+
+	pFile->unlink();
+
+	putInode(pFile->m_iInode);
+
+	delete pFile;
+
+	return true;
 }
 
 // Control files

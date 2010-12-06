@@ -109,7 +109,13 @@ bool GCFS_ControlControl::write(GCFS_Task* pTask, const char * sValue)
         break;
     }
     case eAbort:
+	 {
+        if (!pTask->isSubmited() || pTask->isFinished())
+            return false;
+
+        return pService->abortTask(pTask);
         break;
+	 }
     case eSuspend:
         break;
     }

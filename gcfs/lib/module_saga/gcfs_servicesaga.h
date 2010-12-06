@@ -22,6 +22,8 @@ public:
 public:
 	virtual bool 				submitTask(GCFS_Task* pTask);
 	virtual bool 				waitForTask(GCFS_Task* pTask);
+	virtual bool 				abortTask(GCFS_Task* pTask);
+	virtual bool 				deleteTask(GCFS_Task* pTask);
 
 public:
 	bool							finishTask(GCFS_Task* pTask, const char* sMessage = NULL);

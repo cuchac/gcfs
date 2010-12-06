@@ -27,6 +27,7 @@ public:
 
 public:
 													GCFS_Task(const char * sName);
+													~GCFS_Task();
 
 public:
 	bool 											isFinished();
@@ -67,6 +68,7 @@ public:
 
 	public:
 		int					create();
+		void					unlink();
 		int					getHandle();
 		void					closeHandle();
 		
@@ -128,6 +130,7 @@ public:
 	GCFS_Task::File*					getInodeFile(int iInode);
 	
 	GCFS_Task::File* 					createFile(bool bCreate = true);
+	void 									deleteFile(GCFS_Task::File *pFile);
 	
 	unsigned int						m_uiFirstFileInode;
 

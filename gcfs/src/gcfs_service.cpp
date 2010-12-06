@@ -64,6 +64,32 @@ GCFS_Service*	GCFS_Service::createService(const char * sModule, const char * sNa
 
 }
 
+bool GCFS_Service::submitTask(GCFS_Task* pTask)
+{
+	pTask->m_eStatus = GCFS_Task::eRunning;
+	
+	return true;
+}
+
+bool GCFS_Service::waitForTask(GCFS_Task* pTask)
+{
+	pTask->m_eStatus = GCFS_Task::eFinished;
+
+	return true;
+}
+
+bool GCFS_Service::abortTask(GCFS_Task* pTask)
+{
+	pTask->m_eStatus = GCFS_Task::eAborted;
+
+	return true;
+}
+
+bool GCFS_Service::deleteTask(GCFS_Task* pTask)
+{
+	return true;
+}
+
 GCFS_Task::Status	GCFS_Service::getTaskStatus(GCFS_Task* pTask)
 {
 	return pTask->m_eStatus;
