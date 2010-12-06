@@ -214,7 +214,7 @@ bool GCFS_ServiceSaga::abortTask(GCFS_Task* pTask)
 
 bool GCFS_ServiceSaga::deleteTask(GCFS_Task* pTask)
 {
-	abortTask();
+	abortTask(pTask);
 	
 	return true;
 }
