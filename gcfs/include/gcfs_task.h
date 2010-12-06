@@ -46,6 +46,9 @@ public:
 	GCFS_ConfigInt 							m_iTimeout;
 	GCFS_ConfigService						m_iService;
 	GCFS_ConfigString							m_sExecutable;
+	GCFS_ConfigString							m_sInput;
+	GCFS_ConfigString							m_sOutput;
+	GCFS_ConfigString							m_sError;
 	GCFS_ConfigString							m_sArguments;
 	GCFS_ConfigEnvironment					m_sEnvironment;
 

@@ -92,8 +92,10 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	{
 		sJobDescription.set_attribute(sja::description_interactive, sa::common_false);
 		sJobDescription.set_attribute(sja::description_executable, sExecutable);
-		sJobDescription.set_attribute(sja::description_error,"error");
-		sJobDescription.set_attribute(sja::description_output, "output");
+		sJobDescription.set_attribute(sja::description_error, pTask->m_sError.m_sValue);
+		sJobDescription.set_attribute(sja::description_output, pTask->m_sOutput.m_sValue);
+		if(!pTask->m_sInput.m_sValue.empty())
+			sJobDescription.set_attribute(sja::description_input, pTask->m_sInput.m_sValue);
 		sJobDescription.set_attribute(sja::description_number_of_processes, sProcesses);
 
 		sJobDescription.set_vector_attribute(sja::description_arguments, vArguments);
@@ -150,8 +152,8 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	chdir(g_sConfig.m_sDataDir.c_str());
 
 	// Allow all to write to log files - because of non-root condor
-	chmod((sSubmitDir+"error").c_str(), 0777);
-	chmod((sSubmitDir+"output").c_str(), 0777);
+	chmod((sSubmitDir+pTask->m_sError.m_sValue).c_str(), 0777);
+	chmod((sSubmitDir+pTask->m_sOutput.m_sValue).c_str(), 0777);
 
 	pTask->m_pServiceData = (void*)(pTaskData);
 

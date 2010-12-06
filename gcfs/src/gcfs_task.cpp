@@ -15,6 +15,9 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	m_iTimeout("timeout", "3600"),
 	m_iService("service", NULL, &g_sConfig.m_vServiceNames),
 	m_sExecutable("executable", "./data/executable"),
+	m_sInput("input_file", ""),
+	m_sOutput("output_file", "output"),
+	m_sError("error_file", "error"),
 	m_sArguments("arguments", ""),
 	m_sEnvironment("environment"),
 	
@@ -25,6 +28,9 @@ GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
 	assignVariable(&m_iTimeout);
 	assignVariable(&m_iService);
 	assignVariable(&m_sExecutable);
+	assignVariable(&m_sInput);
+	assignVariable(&m_sOutput);
+	assignVariable(&m_sError);
 	assignVariable(&m_sArguments);
 	assignVariable(&m_sEnvironment);
 
