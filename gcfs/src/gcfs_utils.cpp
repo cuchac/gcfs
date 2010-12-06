@@ -67,7 +67,7 @@ bool GCFS_Utils::mkdirRecursive(const char *path)
 int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
 {
 
-	// Skip roo dir itself
+	// Skip root dir itself
 	if(ftwbuf->base == 0)
 		return 0;
 
@@ -89,4 +89,25 @@ bool GCFS_Utils::rmdirRecursive(const char *sPath)
 	}
 
 	return nftw(sPath, unlink_cb, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS) != 0;
+}
+
+int chmod_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+{
+
+	// Skip root dir itself
+	if(ftwbuf->base == 0)
+		return 0;
+
+	int rv = chmod(fpath, 0777);
+
+	if (rv)
+		perror(fpath);
+
+	return rv;
+}
+
+bool GCFS_Utils::chmodRecursive(const char *sPath, mode_t iMode)
+{
+	// nftw does not support user data - ignore it and assume 0777
+	return nftw(sPath, chmod_cb, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS) != 0;
 }
