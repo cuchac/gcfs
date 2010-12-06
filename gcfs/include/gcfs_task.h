@@ -130,7 +130,7 @@ public:
 	GCFS_Task::File*					getInodeFile(int iInode);
 	
 	GCFS_Task::File* 					createFile(bool bCreate = true);
-	void 									deleteFile(GCFS_Task::File *pFile);
+	bool 									deleteFile(GCFS_Task::File *pFile);
 	
 	unsigned int						m_uiFirstFileInode;
 

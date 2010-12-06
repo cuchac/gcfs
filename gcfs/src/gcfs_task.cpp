@@ -45,6 +45,13 @@ GCFS_Task::~GCFS_Task()
 
 	if(pService)
 		pService->deleteTask(this);
+
+	// Delete all task files
+	Files::iterator it = m_mDataFiles.begin();
+	for(it = m_mDataFiles.begin(); it != m_mDataFiles.end(); it++)
+		it->second->unlink();
+	for(it = m_mResultFiles.begin(); it != m_mResultFiles.end(); it++)
+		it->second->unlink();
 }
 
 bool GCFS_Task::isFinished()
@@ -318,7 +325,7 @@ GCFS_Task::File* GCFS_TaskManager::createFile(bool bCreate)
 	return tmp;
 }
 
-GCFS_Task::File* GCFS_TaskManager::deleteFile(GCFS_Task::File *pFile)
+bool GCFS_TaskManager::deleteFile(GCFS_Task::File* pFile)
 {
 	if(!pFile)
 		return false;
