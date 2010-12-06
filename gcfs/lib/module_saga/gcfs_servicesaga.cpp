@@ -110,11 +110,12 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	// Go to submission directory - did not find any other way to set submission dir. Chdir subject to race conditions?
 	chdir(sSubmitDir.c_str());
 
+	
 	SagaTaskData * pTaskData = new SagaTaskData();
 	pTaskData->m_sCallback.setTask(pTask);
 	pTaskData->m_sCallback.setService(this);
-	
 
+	
 	// Start Submission
 	// If running under root, change credentials to submiting user
 	if(g_sConfig.m_sPermissions.m_iUid == 0 || g_sConfig.m_sPermissions.m_iGid == 0)
@@ -151,9 +152,8 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	// Run back to previous working dir
 	chdir(g_sConfig.m_sDataDir.c_str());
 
-	// Allow all to write to log files - because of non-root condor
-	chmod((sSubmitDir+pTask->m_sError.m_sValue).c_str(), 0777);
-	chmod((sSubmitDir+pTask->m_sOutput.m_sValue).c_str(), 0777);
+	// Grant access to submitting process (for Condor)
+	GCFS_Utils::chmodRecursive(sSubmitDir.c_str(), 0777);
 
 	pTask->m_pServiceData = (void*)(pTaskData);
 
