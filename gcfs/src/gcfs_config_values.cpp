@@ -34,6 +34,10 @@ bool GCFS_ConfigInt::PrintValue(std::string& buff)
 	return true;
 }
 
+GCFS_ConfigInt::operator int()
+{
+	return m_iValue;
+}
 
 bool GCFS_ConfigString::SetValue(const char* sValue, size_t iOffset)
 {
@@ -47,6 +51,11 @@ bool GCFS_ConfigString::PrintValue(std::string& buff)
 	buff = m_sValue;
 
 	return true;
+}
+
+GCFS_ConfigString::operator std::string()
+{
+	return m_sValue;
 }
 
 GCFS_ConfigChoice::GCFS_ConfigChoice(const char *sName, const char *sDefault, choices_t * pvChoices)
@@ -98,6 +107,11 @@ bool GCFS_ConfigChoice::PrintValue(std::string& buff)
 	}
 
 	return true;
+}
+
+GCFS_ConfigChoice::operator int()
+{
+	return m_iValue;
 }
 
 bool GCFS_ConfigEnvironment::SetValue(const char* sValue, size_t iOffset)
@@ -152,6 +166,11 @@ bool GCFS_ConfigEnvironment::PrintValue(std::string& buff)
 		buff += it->first+"="+it->second+"\n";
 
 	return true;
+}
+
+GCFS_ConfigEnvironment::operator values_t()
+{
+	return m_mValues;
 }
 
 bool GCFS_ConfigService::SetValue(const char* sValue, size_t iOffset)

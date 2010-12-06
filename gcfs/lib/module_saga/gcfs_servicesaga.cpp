@@ -84,7 +84,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 
 	// Print number of processes to temporary buffer
 	char sProcesses[32] = {};
-	snprintf(sProcesses, ARRAYSIZE(sProcesses), "%d", pTask->m_iProcesses.m_iValue);
+	snprintf(sProcesses, ARRAYSIZE(sProcesses), "%d", (int)pTask->m_iProcesses);
 
 	saga::job::description sJobDescription;
 	
@@ -92,10 +92,10 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	{
 		sJobDescription.set_attribute(sja::description_interactive, sa::common_false);
 		sJobDescription.set_attribute(sja::description_executable, sExecutable);
-		sJobDescription.set_attribute(sja::description_error, pTask->m_sError.m_sValue);
-		sJobDescription.set_attribute(sja::description_output, pTask->m_sOutput.m_sValue);
+		sJobDescription.set_attribute(sja::description_error, pTask->m_sError);
+		sJobDescription.set_attribute(sja::description_output, pTask->m_sOutput);
 		if(!pTask->m_sInput.m_sValue.empty())
-			sJobDescription.set_attribute(sja::description_input, pTask->m_sInput.m_sValue);
+			sJobDescription.set_attribute(sja::description_input, pTask->m_sInput);
 		sJobDescription.set_attribute(sja::description_number_of_processes, sProcesses);
 
 		sJobDescription.set_vector_attribute(sja::description_arguments, vArguments);
