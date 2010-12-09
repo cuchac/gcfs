@@ -107,6 +107,7 @@ public:
 class GCFS_TaskManager {
 public:
 											GCFS_TaskManager();
+											~GCFS_TaskManager();
 public:
 // Manage tasks
 	GCFS_Task*							addTask(const char * sName);
@@ -121,6 +122,7 @@ public:
 private:
 	std::vector<GCFS_Task*> 		m_vTasks;
 	std::map<std::string, int> 	m_mTaskNames;
+	size_t 								m_iTaskCount;
 	
 // Inode allocation and management
 public:

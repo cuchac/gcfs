@@ -216,7 +216,7 @@ void GCFS_Task::File::closeHandle()
 
 // Task Manager
 
-GCFS_TaskManager::GCFS_TaskManager():m_uiFirstFileInode(-1)
+GCFS_TaskManager::GCFS_TaskManager():m_iTaskCount(0),m_uiFirstFileInode(-1)
 {
 
 	m_vControls.push_back(new GCFS_ControlControl());
@@ -230,11 +230,36 @@ GCFS_TaskManager::GCFS_TaskManager():m_uiFirstFileInode(-1)
 	m_mControlNames["status"] = 2;
 }
 
+GCFS_TaskManager::~GCFS_TaskManager()
+{
+	std::map<std::string, int>::iterator it;
+	for(it = m_mTaskNames.begin(); it != m_mTaskNames.end();)
+		deleteTask((it++)->first.c_str());
+}
+
 GCFS_Task* GCFS_TaskManager::addTask(const char * sName)
 {
+	size_t iTaskIndex;
 	GCFS_Task* pTask = new GCFS_Task(sName);
-	m_vTasks.push_back(pTask);
-	m_mTaskNames[sName] = m_vTasks.size()-1;
+	if(m_iTaskCount == m_vTasks.size())
+	{
+		iTaskIndex = m_iTaskCount;
+		m_vTasks.push_back(pTask);
+	}
+	else
+	{
+		for(size_t iIndex = 0; iIndex < m_vTasks.size(); iIndex++)
+			if(m_vTasks[iIndex] == NULL)
+			{
+				iTaskIndex = iIndex;
+				m_vTasks[iTaskIndex] = pTask;
+				break;
+			}
+	}
+	
+	m_mTaskNames[sName] = iTaskIndex;
+	m_iTaskCount++;
+	
 	return pTask;
 }
 
@@ -244,7 +269,7 @@ bool GCFS_TaskManager::deleteTask(const char * sName)
 	if((iIndex = getTaskIndex(sName)) >= 0)
 	{
 		delete m_vTasks[iIndex];
-		m_vTasks.erase(m_vTasks.begin()+iIndex);
+		m_vTasks[iIndex] = NULL;
 		m_mTaskNames.erase(sName);
 	}
 	
@@ -253,7 +278,7 @@ bool GCFS_TaskManager::deleteTask(const char * sName)
 
 size_t GCFS_TaskManager::getTaskCount()
 {
-	return (int)m_vTasks.size();
+	return (size_t)m_iTaskCount;
 }
 
 GCFS_Task* GCFS_TaskManager::getTask(int iIndex)
