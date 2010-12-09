@@ -232,9 +232,12 @@ GCFS_TaskManager::GCFS_TaskManager():m_iTaskCount(0),m_uiFirstFileInode(-1)
 
 GCFS_TaskManager::~GCFS_TaskManager()
 {
-	std::map<std::string, int>::iterator it;
-	for(it = m_mTaskNames.begin(); it != m_mTaskNames.end();)
+	for(std::map<std::string, int>::iterator it = m_mTaskNames.begin(); it != m_mTaskNames.end();)
 		deleteTask((it++)->first.c_str());
+
+	for(std::vector<GCFS_Control*>::iterator it = m_vControls.begin(); it != m_vControls.end();it++)
+		delete *it;
+	
 }
 
 GCFS_Task* GCFS_TaskManager::addTask(const char * sName)

@@ -6,6 +6,15 @@
 #include "gcfs_utils.h"
 #include <fcntl.h>
 
+GCFS_Config::GCFS_Config()
+{
+}
+
+GCFS_Config::~GCFS_Config()
+{
+	for(std::vector<GCFS_Service*>::iterator it = m_vServices.begin(); it != m_vServices.end();it++)
+		delete *it;
+}
 
 bool GCFS_Config::loadConfig()
 {

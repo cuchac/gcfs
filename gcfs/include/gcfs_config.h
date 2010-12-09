@@ -18,6 +18,9 @@ class GCFS_Service;
 
 class GCFS_Config
 {
+public:
+										GCFS_Config();
+										~GCFS_Config();
 
 	// Configuration Loading
 public:

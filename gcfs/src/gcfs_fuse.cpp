@@ -641,6 +641,7 @@ int init_fuse(int argc, char *argv[])
 
 		se = fuse_lowlevel_new(&args, &gcfs_oper,
 				       sizeof(gcfs_oper), NULL);
+		
 		if (se != NULL) {
 			if (fuse_set_signal_handlers(se) != -1) {
 				fuse_session_add_chan(se, ch);
@@ -653,6 +654,8 @@ int init_fuse(int argc, char *argv[])
 		fuse_unmount(mountpoint, ch);
 	}
 	fuse_opt_free_args(&args);
+
+	free(mountpoint);
 
 	return err ? 1 : 0;
 }
