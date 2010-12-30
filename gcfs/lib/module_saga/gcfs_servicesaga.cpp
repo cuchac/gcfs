@@ -194,10 +194,10 @@ bool GCFS_ServiceSaga::waitForTask(GCFS_Task* pTask)
 
 bool GCFS_ServiceSaga::abortTask(GCFS_Task* pTask)
 {
-	if(pTask->m_eStatus == GCFS_Task::eRunning || pTask->m_eStatus == GCFS_Task::eSuspended || pTask->m_eStatus == GCFS_Task::eSubmitted)
-	{
-		SagaTaskData* pTaskData = (SagaTaskData*)pTask->m_pServiceData;
+	SagaTaskData* pTaskData = (SagaTaskData*)pTask->m_pServiceData;
 
+	if(pTaskData)
+	{
 		try{
 			pTaskData->m_sJob.cancel();
 		}
@@ -206,6 +206,13 @@ bool GCFS_ServiceSaga::abortTask(GCFS_Task* pTask)
 			printf("%s\n", e.what());
 			return false;
 		}
+
+		delete (SagaTaskData*)pTask->m_pServiceData;
+
+		std::string sSubmitDir = g_sConfig.m_sDataDir+pTask->m_sName+"/";
+
+		// Get rid of submit directory
+		GCFS_Utils::rmdirRecursive(sSubmitDir.c_str());
 	}
 
 	return GCFS_Service::abortTask(pTask);
