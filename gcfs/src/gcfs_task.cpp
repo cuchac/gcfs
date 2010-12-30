@@ -49,9 +49,14 @@ GCFS_Task::~GCFS_Task()
 	// Delete all task files
 	Files::iterator it = m_mDataFiles.begin();
 	for(it = m_mDataFiles.begin(); it != m_mDataFiles.end(); it++)
-		it->second->unlink();
+		g_sTasks.deleteFile(it->second);
 	for(it = m_mResultFiles.begin(); it != m_mResultFiles.end(); it++)
-		it->second->unlink();
+		g_sTasks.deleteFile(it->second);
+
+	m_mDataFiles.clear();
+	m_mResultFiles.clear();
+	m_mInodeToDataFiles.clear();
+	m_mInodeToResultFiles.clear();
 }
 
 bool GCFS_Task::isFinished()
