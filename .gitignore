@@ -1,2 +1,6 @@
 *.*~
 build
+*.aux
+*.log
+*.pdf
+*.backup

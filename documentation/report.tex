@@ -1,0 +1,50 @@
+\documentclass[a4paper,10pt,twocolumn]{article}
+\usepackage[utf8]{inputenc}
+
+%opening
+\title{Filesystem for Job Submission to Grid System}
+\author{Josef Kejzlar}
+
+\newcommand{\term}[1]{``#1''}
+\newcommand{\code}[1]{``#1''}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Submitting job to grid system is not an easy task and because there are many different grid software in use, it is hard to find some universal way of submitting user job. Therefore this project tries to introduce user friendly and standardized way of submitting tasks to different grid system using virtual filesystem that acts as a gateway for user. We are trying to minimize necessary user knowledge by exploiting existing Unix standard way of work with virtual filesystem.
+\end{abstract}
+
+\section{Introduction}
+
+Submitting a job to grid system is always a little bit tricky, because our executable code and data are transfered to remote location, there run whenever scheduler decides and we have practically no direct control over the process. Yet it is necessary to do some computation in grid system and we have to deal with all obstacles connected to job submission and control.
+
+Grid system is not something that every researcher can afford to create in his laboratory and these systems are commonly run and administered by IT stuff and not the researches themselves. Therefore there is usually one or two grids given to researcher that he can use and has no way to choose with which grid software he will have to deal with. And even though all grid softwares offers some basic common features it is always researcher that has to cope with given grid software feature set and has to adapt program he want to run to the work flow and possibilities of given grid. 
+
+This diversity and necessity to learn new ways of dealing with basic tasks leads to an effort for standardization and unification of access methods to grid system. One result of this effort are libraries trying to offer universal way of accessing grid resources and transparently deals with differences between grid softwares. The other very common way are standardized interfaces offered directly by grid softwares that can be universally used, however both of these techniques logically provides access only to the lowest common denominator of features offered by all grid softwares.
+
+Researcher is therefore facing decision whether to fully exploit special features offered by one grid software and be bond to use only this software or to use some generic standardized way and be free to migrate between grids or even use more grids together. We have given ourselves the same question and decided that easy migration, unification and ultimate chance to submit one task to more than one grid outweighs a bit more effort necessary to bend submitted job and submitters work flow to comply with reduced feature set.
+
+We want to take generic approaches to job submission one step closer to user, because it still needs a lot of programming skills to use either generic libraries or unified APIs and there are many caveats caused by complexities of setting up these solutions. Therefore we decided to use filesystem as one of the best known interfaces that every user has to deal with  on daily basis and that proved its quality given the time already in use. Barrier for working with filesystem way of job submission is very low and does not require neither special skills nor special support in tools used by user. Basic file operations can be done in every programming or scripting language and file manipulation is also possible to do from many GUI applications.
+
+\section{Overview}
+
+While designing how filesystem interface should look like we had to define work flows that we are going to support natively and that would cover with slight modifications as many existing real world work flows as possible. We chose Condor grid software as a reference software to support because Condor, given its long history, could be defined as a base for most of other grid software in use. We also use Condor way of submitting parallel job, called \term{cluster job} in Condor slang. Cluster job contains more processes able to be running on multiple nodes in parallel.
+
+Typical job suitable for submission using our filesystem has executable that can be run in one or multiple instances. User can define input file, that is passed as standard input and each instance of executable can have different input file passed in. Every instance then produces output file and error file where data from standard output and error streams respectively are stored. Executable can also access other files selected by user during submission that can be modified and will be accessible to user after job finishes. User can also customize executable arguments and environment in which the task is launched.
+
+All of the previous parameters can be made unique per instance. Each value can contain special string \code{\textdollar(process)} that will be replaced by null based instance index. Using this technique, user can define different input/output/error file for each instance and it is also possible to place instance index into executable arguments or in environment variable. So for example user can define input file as \code{input\_\textdollar(process).txt} and first instance will get file \code{input\_0.txt} passed in, second \code{input\_1.txt}, third \code{input\_2.txt} and so on. This technique of dealing with different parameters for each instance is very efficient because user does not have to specify unique value for every instance and still has good control over parameter value. There is of course trade-off between complete freedom of job parameters customization and easy, systematic and consistent parameters generating.
+
+
+
+\section{Design}
+
+While designing the filesystem way of accessing functionality for job submission and control we heavily reused techniques from other virtual filesystems commonly in use. Directories represents some logical objects and creates hierarchical tree structure. Files placed in directories allow read and/or write access to properties of these objects and they are very often created automatically and prefilled with default values, so that user always know what properties object supports and what values holds. By simple reading values from files it is possible to get current value of property and by writing into file the property value is set. Symbolic links are also used to represent relations between objects or properties.
+
+The main object used in job submission is the job itself.Therefore each subdirectory of root directory represents a job. The name of directory uniquely identifies job and represents its name. Job directory contains all the files necessary for its submission. In \term{config} directory one can find all configuration parameters. User can modify files in this directory to customize job parameters. Each parameter has configurable default value. These values specify for example number of processes, name of executable, name of input file and so on. Another important directory is \term{data} directory where goes all user-supplied files. User has to copy there at least executable file. Of course all the supplementary files required by job should be also copied into data directory. 
+
+However it is up to the user to ensure, that each instance writes results to file having unique filename, because during task finishing all the files from all instances are collected in one directory and files having same filename are overwritten in random order.
+
+
+\end{document}
