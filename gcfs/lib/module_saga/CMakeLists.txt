@@ -4,6 +4,10 @@ if (GCFS_MODULE_SAGA)
 
 	add_library(gcfs_saga gcfs_servicesaga.cpp gcfs_servicesaga_taskdata.cpp)
 
+	FIND_PACKAGE(Boost)
+	INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
+
+
 	FIND_PACKAGE(SAGA REQUIRED)
 
 	target_link_libraries(gcfs_saga ${SAGA_LIBRARIES})
