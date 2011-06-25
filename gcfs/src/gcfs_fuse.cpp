@@ -109,21 +109,26 @@ static void gcfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
 	struct stat stbuf = {0};
 
 	uint iTaskIndex = GCFS_TASK_FROM_INODE(ino);
-
-	if(ino < g_sTasks.m_uiFirstFileInode)
-	{
-		GCFS_Task* pTask = g_sTasks.getTask(iTaskIndex);
-
-		if(to_set & FUSE_SET_ATTR_MODE)
-			pTask->m_sPermissions.m_sMode = attr->st_mode & 0777;
-
-		if(to_set & FUSE_SET_ATTR_UID)
-			pTask->m_sPermissions.m_iUid = attr->st_uid;
-
-		if(to_set & FUSE_SET_ATTR_GID)
-			pTask->m_sPermissions.m_iGid = attr->st_gid;
-	}
-
+    
+    GCFS_Permissions *pPermissions = NULL;
+    
+    if(ino == FUSE_ROOT_ID)
+        pPermissions = &g_sConfig.m_sPermissions;
+    else if(ino < g_sTasks.m_uiFirstFileInode)
+        pPermissions = &g_sTasks.getTask(iTaskIndex)->m_sPermissions;
+	
+    if(pPermissions)
+    {
+        if(to_set & FUSE_SET_ATTR_MODE)
+            pPermissions->m_sMode = attr->st_mode & 0777;
+        
+        if(to_set & FUSE_SET_ATTR_UID)
+            pPermissions->m_iUid = attr->st_uid;
+        
+        if(to_set & FUSE_SET_ATTR_GID)
+            pPermissions->m_iGid = attr->st_gid;
+    }
+    
 	if (gcfs_stat(ino, &stbuf) == -1)
 		fuse_reply_err(req, ENOENT);
 	else
