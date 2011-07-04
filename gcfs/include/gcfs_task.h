@@ -55,6 +55,12 @@ public:
    GCFS_ConfigEnvironment             m_sEnvironment;
 
 // Mapping of confg values for dynamic access
+   GCFS_ConfigValue*                  getConfigValue(const char * sName);
+   GCFS_ConfigValue*                  getConfigValue(uint iIndex);
+   uint                               getConfigValueCount();
+   uint                               getConfigValueIndex(const char* sName);
+
+private:
    std::vector<GCFS_ConfigValue*>     m_vConfigValues;
    std::map<std::string, int>         m_mConfigNameToIndex;
 
@@ -95,6 +101,7 @@ public:
 
    File*                                 getExecutableFile();
 
+
 // Data and result files mapping from name to inode number
 public:
    Files                                 m_mDataFiles;
@@ -116,7 +123,7 @@ public:
 
    size_t                       getTaskCount();
 
-   GCFS_Task*                   getTask(int iIndex);
+   GCFS_Task*                   getTask(uint iIndex);
    GCFS_Task*                   getTask(const char * sName);
    int                          getTaskIndex(const char * sName);
 

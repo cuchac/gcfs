@@ -34,10 +34,13 @@ bool GCFS_Service::configure(CSimpleIniA& pConfig)
 bool GCFS_Service::customizeTask(GCFS_Task* pTask)
 {
 	std::map<std::string, int >::iterator itConfig;
-	std::map <std::string, std::string >::iterator itDefault;
-	for(itConfig = pTask->m_mConfigNameToIndex.begin(); itConfig != pTask->m_mConfigNameToIndex.end(); itConfig++)
-		if((itDefault = m_mDefaults.find(itConfig->first)) != m_mDefaults.end())
-			pTask->m_vConfigValues[itConfig->second]->SetValue(itDefault->second.c_str());
+	std::map<std::string, std::string >::iterator itDefault;
+	for(uint iIndex = 0; iIndex < pTask->getConfigValueCount(); iIndex++)
+   {
+      GCFS_ConfigValue * pValue = pTask->getConfigValue(iIndex);
+      if((itDefault = m_mDefaults.find(pValue->m_sName)) != m_mDefaults.end())
+         pValue->SetValue(itDefault->second.c_str());
+   }
 
 	for(itDefault = m_mEnvironment.begin(); itDefault != m_mEnvironment.end(); itDefault++)
 		pTask->m_sEnvironment.SetValue(itDefault->first.c_str(), itDefault->second.c_str());

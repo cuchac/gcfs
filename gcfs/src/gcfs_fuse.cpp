@@ -161,12 +161,12 @@ static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	{
 		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_RESULT);
 	}
-	else if(iParentIndex == GCFS_DIR_TASK && ((iIndex = g_sTasks.getControlIndex(name))) >= 0)
+	else if(iParentIndex == GCFS_DIR_TASK && (iIndex = g_sTasks.getControlIndex(name)) >= 0)
 	{
 		e.ino = GCFS_CONTROLINODE(iTaskIndex, GCFS_CONTROL_FIRST + iIndex);
 	}
-	else if(iParentIndex == GCFS_DIR_CONFIG && (pTask = g_sTasks.getTask(iTaskIndex)) && pTask->m_mConfigNameToIndex.find(name) != pTask->m_mConfigNameToIndex.end()){
-		e.ino = GCFS_CONFIGINODE(iTaskIndex, pTask->m_mConfigNameToIndex[name]);
+	else if(iParentIndex == GCFS_DIR_CONFIG && (pTask = g_sTasks.getTask(iTaskIndex)) && (iIndex = pTask->getConfigValueIndex(name)) >= 0){
+		e.ino = GCFS_CONFIGINODE(iTaskIndex, iIndex);
 	}
 	else if(iParentIndex == GCFS_DIR_DATA && (pTask = g_sTasks.getTask(iTaskIndex)) &&  pTask->m_mDataFiles.find(name) != pTask->m_mDataFiles.end()){
 		e.ino = pTask->m_mDataFiles[name]->m_iInode;
@@ -246,8 +246,9 @@ static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 		case GCFS_DIR_CONFIG:
 		{
 			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
-			for(uint iIndex = 0; iIndex < g_sTasks.getTask(iTaskIndex)->m_vConfigValues.size(); iIndex++)
-				dirbuf_add(req, buff, g_sTasks.getTask(iTaskIndex)->m_vConfigValues[iIndex]->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
+         GCFS_Task * pTask = g_sTasks.getTask(iTaskIndex);
+         for(uint iIndex = 0; iIndex < pTask->getConfigValueCount(); iIndex++)
+				dirbuf_add(req, buff, pTask->getConfigValue(iIndex)->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
 			break;
 		}
 
@@ -307,7 +308,7 @@ static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
 		else if(GCFS_IS_CONFIGINODE(iIndex))
 		{
 			int iConfigIndex = iIndex - GCFS_CONFIG_FIRST;
-			fi->fh = (uint64_t)g_sTasks.getTask(iTaskIndex)->m_vConfigValues[iConfigIndex];
+			fi->fh = (uint64_t)g_sTasks.getTask(iTaskIndex)->getConfigValue(iConfigIndex);
 
 			fuse_reply_open(req, fi);
 		}

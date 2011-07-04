@@ -39,6 +39,7 @@ class GCFS_ControlControl : public GCFS_Control
 {
 public:
 						GCFS_ControlControl();
+   bool           executeCommand(GCFS_Task* pTask, int iCommandIndex);
 
 private:
 	std::vector<const char *> 	m_vCommands;

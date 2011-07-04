@@ -69,6 +69,33 @@ bool GCFS_Task::isSubmited()
    return m_eStatus != GCFS_Task::eNew;
 }
 
+GCFS_ConfigValue* GCFS_Task::getConfigValue(const char * sName)
+{
+   return getConfigValue(getConfigValueIndex(sName));
+}
+
+GCFS_ConfigValue* GCFS_Task::getConfigValue(uint iIndex)
+{
+   if (iIndex >= 0 && iIndex < m_vConfigValues.size())
+      return m_vConfigValues[iIndex];
+   else
+      return NULL;
+}
+
+uint GCFS_Task::getConfigValueCount()
+{
+   return m_vConfigValues.size();
+}
+
+uint GCFS_Task::getConfigValueIndex(const char * sName)
+{
+   std::map<std::string, int>::iterator it;
+   if ((it = m_mConfigNameToIndex.find(sName)) != m_mConfigNameToIndex.end())
+      return it->second;
+   else
+      return -1;
+}
+
 void GCFS_Task::assignVariable(GCFS_ConfigValue* pValue)
 {
    m_vConfigValues.push_back(pValue);
@@ -290,7 +317,7 @@ size_t GCFS_TaskManager::getTaskCount()
    return (size_t)m_iTaskCount;
 }
 
-GCFS_Task* GCFS_TaskManager::getTask(int iIndex)
+GCFS_Task* GCFS_TaskManager::getTask(uint iIndex)
 {
    if(iIndex < m_vTasks.size())
       return m_vTasks[iIndex];
@@ -404,6 +431,3 @@ int GCFS_TaskManager::getControlIndex(const char * sName)
    else
       return -1;
 }
-
-
-// kate: indent-mode cstyle; space-indent on; indent-width 3; replace-tabs on; 

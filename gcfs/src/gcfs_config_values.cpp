@@ -9,13 +9,56 @@
 #include <gcfs_config.h>
 #include <gcfs_service.h>
 
-std::string GCFS_ConfigValue::trimStr(const std::string& Src, const std::string& c)
+std::string GCFS_ConfigValue::TrimStr(const std::string& Src, const std::string& c)
 {
 	size_t p2 = Src.find_last_not_of(c);
 	if (p2 == std::string::npos) return std::string();
 	size_t p1 = Src.find_first_not_of(c);
 	if (p1 == std::string::npos) p1 = 0;
 	return Src.substr(p1, (p2-p1)+1);
+}
+
+GCFS_ConfigValue::keyValue_t GCFS_ConfigValue::ParseAssignment(char * string)
+{
+   char *pChar = NULL, *pKey = NULL, *pValue = NULL;
+   if((pKey = strtok_r(string, GCFS_CONFIG_ASSIGNCHAR, &pChar)) != NULL &&
+      (pValue = strtok_r(NULL, GCFS_CONFIG_ASSIGNCHAR, &pChar)) != NULL)
+      // Return key-value pair
+      return keyValue_t(pKey, pValue);
+
+   // No assignment -> it is command
+   return keyValue_t(string, NULL);
+}
+
+bool GCFS_ConfigValue::ParseConfigString(char * string, GCFS_ConfigValue::keyValueArray_t& vValues)
+{
+   // replace $(process) with @(process) to get rid of '$' character. It is delimiter as well
+   ReplaceToken(string, "$(process)", "@(process)");
+   
+   // Parse all the commands/assignments
+   char * pPos = NULL;
+   char * pToken = strtok_r(string, GCFS_CONFIG_DELIMITERS, &pPos);
+
+   while(pToken != NULL)
+   {
+      ReplaceToken(pToken, "@(process)", "$(process)");
+      
+      vValues.push_back(ParseAssignment(pToken));
+
+      pToken = strtok_r(NULL, GCFS_CONFIG_DELIMITERS, &pPos);
+   }
+
+   return true;
+}
+
+void GCFS_ConfigValue::ReplaceToken(char * sString, const char * sSearch, const char * sReplacement)
+{
+   char * pPos = sString;
+   while((pPos = strcasestr(pPos, sSearch)) != NULL)
+   {
+      memcpy(pPos, sReplacement, strlen(sReplacement));
+      pPos++;
+   }
 }
 
 bool GCFS_ConfigInt::SetValue(const char* sValue, size_t iOffset)
@@ -31,7 +74,7 @@ bool GCFS_ConfigInt::PrintValue(std::string& buff)
 	buff.resize(size+1);
 	snprintf((char*)buff.c_str(), size+1, "%d", m_iValue);
 	
-	return true;
+   return true;
 }
 
 GCFS_ConfigInt::operator int()
@@ -41,7 +84,7 @@ GCFS_ConfigInt::operator int()
 
 bool GCFS_ConfigString::SetValue(const char* sValue, size_t iOffset)
 {
-	m_sValue = trimStr(sValue);
+	m_sValue = TrimStr(sValue);
 
 	return true;
 }
@@ -75,7 +118,7 @@ bool GCFS_ConfigChoice::SetValue(const char* sValue, size_t iOffset)
 	if(!sValue)
 		return false;
 	
-	std::string value = trimStr(sValue);
+	std::string value = TrimStr(sValue);
 	
 	uint iVal = -1;
 	for(uint iIndex = 0; iIndex < m_vChoices.size(); iIndex ++)
@@ -126,7 +169,7 @@ bool GCFS_ConfigEnvironment::SetValue(const char* sValue, size_t iOffset)
 	else // Dont allow to write in the middle
 		return false; 
 
-	std::string sNewValue = trimStr(sValue);
+	std::string sNewValue = TrimStr(sValue);
 
 	wordexp_t sArguments;
 	if(wordexp(sNewValue.c_str(), &sArguments, 0))
@@ -152,7 +195,7 @@ bool GCFS_ConfigEnvironment::SetValue(const char* sKey, const char* sValue)
 	if(!sValue || !sKey)
 		return false;
 
-	std::string sNewValue = trimStr(sValue);
+	std::string sNewValue = TrimStr(sValue);
 
 	m_mValues[sKey]=sNewValue;
 	
@@ -184,3 +227,4 @@ bool GCFS_ConfigService::SetValue(const char* sValue, size_t iOffset)
 	
 	return true;
 }
+
