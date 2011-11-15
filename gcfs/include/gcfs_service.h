@@ -34,6 +34,7 @@ public:
 	virtual	bool					deleteTask(GCFS_Task* pTask);
 
 	virtual	GCFS_Task::Status	getTaskStatus(GCFS_Task* pTask);
+   virtual  const std::string getTaskId(GCFS_Task* pTask) = 0;
 
 public:
 	std::string						m_sName;

@@ -1,7 +1,6 @@
 #ifndef GCFS_SERVICESAGA_H
 #define GCFS_SERVICESAGA_H
 
-#include "lib/simpleini/SimpleIni.h"
 #include "gcfs_service.h"
 
 namespace saga {
@@ -24,7 +23,8 @@ public:
 	virtual bool 				waitForTask(GCFS_Task* pTask);
 	virtual bool 				abortTask(GCFS_Task* pTask);
 	virtual bool 				deleteTask(GCFS_Task* pTask);
-
+   virtual const std::string getTaskId(GCFS_Task* pTask);
+   
 public:
 	bool							finishTask(GCFS_Task* pTask, const char* sMessage = NULL);
 

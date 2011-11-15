@@ -26,12 +26,15 @@ const char * GCFS_ControlStatus::statuses[] =
 
 bool GCFS_ControlStatus::read(GCFS_Task* pTask, std::string &buff)
 {
-   int status = (int)g_sConfig.GetService(pTask->m_iService.m_iValue)->getTaskStatus(pTask);
+   GCFS_Service* pService = g_sConfig.GetService(pTask->m_iService.m_iValue);
+   int status = (int)pService->getTaskStatus(pTask);
+   const std::string id = pService->getTaskId(pTask);
 
    char cbuff[32];
    snprintf(cbuff, ARRAYSIZE(cbuff), "%d\t%s", status, statuses[status]);
 
    buff = cbuff;
+   buff += "\n"+id;
 
    return true;
 }

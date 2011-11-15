@@ -38,6 +38,7 @@ bool SagaCallback::callbackStatus (saga::monitorable mt,
 			saga::context     c)
 {
 	std::string sStatus = m.get_attribute("Value");
+   saga::detail::attribute< saga::metric >::strvec_type list = m.list_attributes();
 
 	m_pTask->m_eStatus = convertStatus(sStatus.c_str());
 

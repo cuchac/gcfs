@@ -1,3 +1,4 @@
+#include "lib/simpleini/SimpleIni.h"
 #include "gcfs_servicesaga.h"
 #include "gcfs_servicesaga_taskdata.h"
 
@@ -9,7 +10,6 @@
 #include <saga/saga.hpp>
 #include <dirent.h>
 #include <wordexp.h>
-
 
 namespace sa  = saga::attributes;
 namespace sja = saga::job::attributes;
@@ -54,12 +54,13 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 
 	// Fill-in executable parameters - parse arguments string into parameters
 	std::vector <std::string> vArguments;
-	wordexp_t sArguments;
+	/*wordexp_t sArguments;
 	if(wordexp(pTask->m_sArguments.m_sValue.c_str(), &sArguments, 0))
 		return false;
 	for (uint iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
 		vArguments.push_back(sArguments.we_wordv[iIndex]);
-	wordfree(&sArguments);
+	wordfree(&sArguments);*/
+	vArguments.push_back(pTask->m_sArguments.m_sValue);
 
 	// Fill-in executable environment
 	std::vector <std::string> vEnvironment;
@@ -226,6 +227,15 @@ bool GCFS_ServiceSaga::deleteTask(GCFS_Task* pTask)
 	return true;
 }
 
+const std::string GCFS_ServiceSaga::getTaskId(GCFS_Task* pTask)
+{
+   SagaTaskData* pTaskData = (SagaTaskData*)pTask->m_pServiceData;
+
+   if(pTaskData)
+      return pTaskData->m_sJob.get_job_id();
+   else
+      return "cannot get ID";
+}
 
 bool isFile(const char* sPath)
 {
