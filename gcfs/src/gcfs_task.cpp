@@ -49,9 +49,9 @@ GCFS_Task::~GCFS_Task()
    // Delete all task files
    Files::iterator it = m_mDataFiles.begin();
    for (it = m_mDataFiles.begin(); it != m_mDataFiles.end(); it++)
-      g_sTasks.deleteFile(it->second);
+      g_sTaskManager.deleteFile(it->second);
    for (it = m_mResultFiles.begin(); it != m_mResultFiles.end(); it++)
-      g_sTasks.deleteFile(it->second);
+      g_sTaskManager.deleteFile(it->second);
 
    m_mDataFiles.clear();
    m_mResultFiles.clear();
@@ -110,7 +110,7 @@ GCFS_Task::File* GCFS_Task::createDataFile(const char * name)
    if ((pFile = getDataFile(name)))
       return pFile;
 
-   pFile = g_sTasks.createFile();
+   pFile = g_sTaskManager.createFile();
 
    m_mDataFiles[name] = pFile;
    m_mInodeToDataFiles[pFile->m_iInode] = pFile;
@@ -131,7 +131,7 @@ bool GCFS_Task::deleteDataFile(const char * name)
    m_mDataFiles.erase(name);
    m_mInodeToDataFiles.erase(pFile->m_iInode);
 
-   return g_sTasks.deleteFile(pFile);
+   return g_sTaskManager.deleteFile(pFile);
 }
 
 GCFS_Task::File* GCFS_Task::getDataFile(const char * name)
@@ -155,7 +155,7 @@ GCFS_Task::File* GCFS_Task::createResultFile(const char * name, bool bCreate)
    if ((pFile = getResultFile(name)))
       return pFile;
 
-   pFile = g_sTasks.createFile(bCreate);
+   pFile = g_sTaskManager.createFile(bCreate);
 
    m_mResultFiles[name] = pFile;
    m_mInodeToResultFiles[pFile->m_iInode] = pFile;
@@ -176,7 +176,7 @@ bool GCFS_Task::deleteResultFile(const char * name)
    m_mResultFiles.erase(name);
    m_mInodeToResultFiles.erase(pFile->m_iInode);
 
-   return g_sTasks.deleteFile(pFile);
+   return g_sTaskManager.deleteFile(pFile);
 }
 
 GCFS_Task::File* GCFS_Task::getResultFile(const char * name)

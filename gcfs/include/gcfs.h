@@ -21,6 +21,6 @@ struct GCFS_Permissions
 extern GCFS_Config g_sConfig;
 
 // Tasks
-extern GCFS_TaskManager g_sTasks;
+extern GCFS_TaskManager g_sTaskManager;
 
 #endif /*__GCFS__*/
