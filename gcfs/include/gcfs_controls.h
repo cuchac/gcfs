@@ -4,58 +4,55 @@
 #include <string>
 #include <vector>
 
+#include "gcfs_filesystem.h"
+
 class GCFS_Task;
 
-class GCFS_Control
+class GCFS_Control : public GCFS_FileSystem
 {
 public:
-						GCFS_Control(const char *sName):m_sName(sName){};
-	virtual					~GCFS_Control(){};
-
-	virtual	bool	write(GCFS_Task* pTask, const char * sValue) = 0;
-	virtual	bool	read(GCFS_Task* pTask, std::string &buff) = 0;
-
-	std::string 	trimStr(const std::string& Src, const std::string& c = " \r\n");
-
-public:
-	const char * 	m_sName;
+                        GCFS_Control(GCFS_Task * pTask);
+   virtual	           ~GCFS_Control(){};
 };
 
 class GCFS_ControlStatus : public GCFS_Control
 {
 public:
-						GCFS_ControlStatus():GCFS_Control("status"){}
+                        GCFS_ControlStatus(GCFS_Task * pTask);
 
 public:
-	virtual	bool	write(GCFS_Task* pTask, const char * sValue);
-	virtual	bool	read(GCFS_Task* pTask, std::string &buff);
-	 
+   virtual ssize_t      read(std::string sBuffer, off_t uiOffset, size_t uiSize);
+   virtual ssize_t      write(const char * sBuffer, off_t uiOffset, size_t uiSize);
+
 private:
-	static const char *	statuses[];
+   static const char *  statuses[];
 };
 
 
 class GCFS_ControlControl : public GCFS_Control
 {
 public:
-						GCFS_ControlControl();
-   bool           executeCommand(GCFS_Task* pTask, int iCommandIndex);
-
-private:
-	std::vector<const char *> 	m_vCommands;
-
-private:
-	enum eActions {
-		eStart = 0,
-		eStartAndWait,
-		eWait,
-		eAbort,
-		eSuspend
-	};
+                        GCFS_ControlControl(GCFS_Task * pTask);
 
 public:
-    virtual	bool	write(GCFS_Task* pTask, const char * sValue);
-    virtual	bool	read(GCFS_Task* pTask, std::string &buff);
+   bool                 executeCommand(GCFS_Task* pTask, int iCommandIndex);
+
+private:
+   std::vector<const char *> m_vCommands;
+
+private:
+   enum eActions {
+      eStart = 0,
+      eStartAndWait,
+      eWait,
+      eAbort,
+      eSuspend
+   };
+
+public:
+   virtual ssize_t      read(std::string sBuffer, off_t uiOffset, size_t uiSize);
+   virtual ssize_t      write(const char * sBuffer, off_t uiOffset, size_t uiSize);
 };
+
 
 #endif // GCFS_CONTROLS_H

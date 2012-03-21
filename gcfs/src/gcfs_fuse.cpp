@@ -27,178 +27,132 @@
 
 static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 {
-	stbuf->st_ino = ino;
-	stbuf->st_mode = 0;
+   stbuf->st_ino = ino;
+   stbuf->st_mode = 0;
 
-	uint iIndex = GCFS_INDEX_FROM_INODE(ino);
-	uint iTaskIndex = GCFS_TASK_FROM_INODE(ino);
-	
-	mode_t iUmask = 0000;
-	GCFS_Permissions *pPermission = NULL;
+   mode_t iUmask = 0000;
+   GCFS_Permissions * pPermission = NULL;
+   GCFS_FileSystem * pFile = NULL;
 
-	if(ino == FUSE_ROOT_ID) {
-		stbuf->st_mode = S_IFDIR;
-		pPermission = &g_sConfig.m_sPermissions;
-	}
-	else if(ino > g_sTaskManager.m_uiFirstFileInode)
-	{
-		stat(g_sTaskManager.getInodeFile(ino)->m_sPath.c_str(), stbuf);
-		stbuf->st_ino = ino;
-		stbuf->st_mode = S_IFREG;
-		pPermission = &g_sTaskManager.getInodeFile(ino)->m_pTask->m_sPermissions;
-	}
-	else
-	{
-		if(ino > GCFS_FUSE_INODES_PER_TASK * g_sTaskManager.getTaskCount())
-			return -1;
+   pFile = GCFS_FileSystem::getInodeFile(ino);
+   
+   if(pFile)
+   {
+      switch(pFile->getType())
+      {
+         case GCFS_FileSystem::eTypeDirectory:
+         case GCFS_FileSystem::eTypeTask:
+            stbuf->st_mode = S_IFDIR;
+            break;
+         case GCFS_FileSystem::eTypeLink:
+            stbuf->st_mode = S_IFLNK;
+            break;
+         case GCFS_FileSystem::eTypePhysicalFile:
+            stat(((GCFS_File*)pFile)->getPath(), stbuf);
+            break;
+         default:
+            stbuf->st_mode = S_IFREG;
+            break;
+      }
+      pPermission = pFile->getPermissions();
+   }
+   else
+   {
+      printf("Error stat inode: %d, \n", (int)ino);
+      return -1;
+   }
 
+   if(pPermission)
+   {
+      stbuf->st_mode |= pPermission->m_sMode;
+      stbuf->st_uid = pPermission->m_iUid;
+      stbuf->st_gid = pPermission->m_iGid;
+   }
 
-		if(GCFS_IS_DIRINODE(iIndex)) // Task dir
-		{
-			stbuf->st_mode = S_IFDIR;
-		}
-		else if(iIndex == GCFS_CONTROL_EXECUTABLE)
-		{
-			stbuf->st_mode = S_IFLNK;
-		}
-		else if(GCFS_IS_CONFIGINODE(iIndex) || GCFS_IS_CONTROLINODE(iIndex))
-		{
-			stbuf->st_mode = S_IFREG;
-			iUmask = 07000 | S_IXGRP | S_IXUSR | S_IXOTH; // Remove execute permissions
-		}
-		else
-		{
-			printf("Error stat inode: %d, \n", (int)ino);
-			return -1;
-		}
+   stbuf->st_nlink = 1;
+   stbuf->st_mode &= ~iUmask;
 
-		pPermission = &g_sTaskManager.getTask(iTaskIndex)->m_sPermissions;
-	}
+   stbuf->st_mtime = stbuf->st_atime = stbuf->st_ctime = time(NULL);
 
-	if(pPermission)
-	{
-		stbuf->st_mode |= pPermission->m_sMode;
-		stbuf->st_uid = pPermission->m_iUid;
-		stbuf->st_gid = pPermission->m_iGid;
-	}
-
-	stbuf->st_nlink = 1;
-	stbuf->st_mode &= ~iUmask;
-
-	stbuf->st_mtime = stbuf->st_atime = stbuf->st_ctime = time(NULL);
-
-	return 0;
+   return 0;
 }
 
-static void gcfs_getattr(fuse_req_t req, fuse_ino_t ino,
-			     struct fuse_file_info *fi)
+static void gcfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	struct stat stbuf = {0};
+   struct stat stbuf = {0};
 
-	(void) fi;
+   (void) fi;
 
-	if (gcfs_stat(ino, &stbuf) == -1)
-		fuse_reply_err(req, ENOENT);
-	else
-		fuse_reply_attr(req, &stbuf, GCFS_FUSE_STAT_TIMEOUT);
+   if (gcfs_stat(ino, &stbuf) == -1)
+      fuse_reply_err(req, ENOENT);
+   else
+      fuse_reply_attr(req, &stbuf, GCFS_FUSE_STAT_TIMEOUT);
 }
 
-static void gcfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
-			 int to_set, struct fuse_file_info *fi)
+static void gcfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi)
 {
-	struct stat stbuf = {0};
+   struct stat stbuf = {0};
 
-	uint iTaskIndex = GCFS_TASK_FROM_INODE(ino);
+   GCFS_Permissions *pPermissions = NULL;
+
+   GCFS_FileSystem* pFile = GCFS_FileSystem::getInodeFile(ino);
+   
+   if(pFile->getType() == GCFS_FileSystem::eTypeTask || ino == FUSE_ROOT_ID)
+      pPermissions = pFile->getPermissions();
+   
+   if(pPermissions)
+   {
+      if(to_set & FUSE_SET_ATTR_MODE)
+         pPermissions->m_sMode = attr->st_mode & 0777;
+      
+      if(to_set & FUSE_SET_ATTR_UID)
+         pPermissions->m_iUid = attr->st_uid;
+      
+      if(to_set & FUSE_SET_ATTR_GID)
+         pPermissions->m_iGid = attr->st_gid;
+   }
     
-    GCFS_Permissions *pPermissions = NULL;
-    
-    if(ino == FUSE_ROOT_ID)
-        pPermissions = &g_sConfig.m_sPermissions;
-    else if(ino < g_sTaskManager.m_uiFirstFileInode)
-        pPermissions = &g_sTaskManager.getTask(iTaskIndex)->m_sPermissions;
-	
-    if(pPermissions)
-    {
-        if(to_set & FUSE_SET_ATTR_MODE)
-            pPermissions->m_sMode = attr->st_mode & 0777;
-        
-        if(to_set & FUSE_SET_ATTR_UID)
-            pPermissions->m_iUid = attr->st_uid;
-        
-        if(to_set & FUSE_SET_ATTR_GID)
-            pPermissions->m_iGid = attr->st_gid;
-    }
-    
-	if (gcfs_stat(ino, &stbuf) == -1)
-		fuse_reply_err(req, ENOENT);
-	else
-		fuse_reply_attr(req, &stbuf, GCFS_FUSE_STAT_TIMEOUT);
+   if (gcfs_stat(ino, &stbuf) == -1)
+      fuse_reply_err(req, ENOENT);
+   else
+      fuse_reply_attr(req, &stbuf, GCFS_FUSE_STAT_TIMEOUT);
 }
 
 static void gcfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-	struct fuse_entry_param e = {0};
+   struct fuse_entry_param e = {0};
 
-	GCFS_Task* pTask = NULL;
-	uint iIndex = -1;
-	
-	int iParentIndex = GCFS_INDEX_FROM_INODE(parent);
-	uint iTaskIndex = GCFS_TASK_FROM_INODE(parent);
+   GCFS_FileSystem* pParentFile = GCFS_FileSystem::getInodeFile(parent);
+   const GCFS_FileSystem* pChild = NULL;
+   
+   if(pParentFile && (pChild = pParentFile->getChild(name)) != NULL)
+   {
+      e.ino = pChild->getInode();
+   }
+   else
+   {
+      printf("Error lookup: %s, parent: %d\n", name, (int)parent);
+      fuse_reply_err(req, ENOENT);
+      return;
+   }
 
-	if ((parent == FUSE_ROOT_ID) && (g_sTaskManager.getTask(name) != NULL))
-	{
-		e.ino = GCFS_DIRINODE(g_sTaskManager.getTaskIndex(name), GCFS_DIR_TASK);
-	}
-	else if(iParentIndex == GCFS_DIR_TASK && strcmp(name, "config")==0)
-	{
-		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG);
-	}
-	else if(iParentIndex == GCFS_DIR_TASK && strcmp(name, "data")==0)
-	{
-		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_DATA);
-	}
-	else if(iParentIndex == GCFS_DIR_TASK && (pTask = g_sTaskManager.getTask(iTaskIndex)) && pTask->isSubmited() && strcmp(name, "result")==0)
-	{
-		e.ino = GCFS_DIRINODE(iTaskIndex, GCFS_DIR_RESULT);
-	}
-	else if(iParentIndex == GCFS_DIR_TASK && (iIndex = g_sTaskManager.getControlIndex(name)) >= 0)
-	{
-		e.ino = GCFS_CONTROLINODE(iTaskIndex, GCFS_CONTROL_FIRST + iIndex);
-	}
-	else if(iParentIndex == GCFS_DIR_CONFIG && (pTask = g_sTaskManager.getTask(iTaskIndex)) && (iIndex = pTask->getConfigValueIndex(name)) >= 0){
-		e.ino = GCFS_CONFIGINODE(iTaskIndex, iIndex);
-	}
-	else if(iParentIndex == GCFS_DIR_DATA && (pTask = g_sTaskManager.getTask(iTaskIndex)) &&  pTask->m_mDataFiles.find(name) != pTask->m_mDataFiles.end()){
-		e.ino = pTask->m_mDataFiles[name]->m_iInode;
-	}
-	else if(iParentIndex == GCFS_DIR_RESULT && (pTask = g_sTaskManager.getTask(iTaskIndex)) &&  pTask->m_mResultFiles.find(name) != pTask->m_mResultFiles.end()){
-		e.ino = pTask->m_mResultFiles[name]->m_iInode;
-	}
-	else
-	{
-		printf("Error lookup: %s, parent: %d\n", name, (int)parent);
-		fuse_reply_err(req, ENOENT);
-		return;
-	}
-
-	e.attr_timeout = 1.0;
-	e.entry_timeout = 1.0;
-	gcfs_stat(e.ino, &e.attr);
-	fuse_reply_entry(req, &e);
+   e.attr_timeout = 1.0;
+   e.entry_timeout = 1.0;
+   gcfs_stat(e.ino, &e.attr);
+   fuse_reply_entry(req, &e);
 }
 
-static void dirbuf_add(fuse_req_t req, std::string &buff , const char *name,
-		       fuse_ino_t ino)
+static void dirbuf_add(fuse_req_t req, std::string &buff , const char *name, fuse_ino_t ino)
 {
-	struct stat stbuf = {0};
+   struct stat stbuf = {0};
 
-	stbuf.st_ino = ino;
+   stbuf.st_ino = ino;
 
-	size_t bufSize = buff.size();
+   size_t bufSize = buff.size();
 
-	size_t size = fuse_add_direntry(req, NULL, 0, name, NULL, 0);
-	buff.resize(bufSize+size);
-	fuse_add_direntry(req, (char*)buff.c_str() + bufSize, size, name, &stbuf, bufSize+size);
+   size_t size = fuse_add_direntry(req, NULL, 0, name, NULL, 0);
+   buff.resize(bufSize+size);
+   fuse_add_direntry(req, (char*)buff.c_str() + bufSize, size, name, &stbuf, bufSize+size);
 
 }
 
@@ -206,356 +160,212 @@ static void dirbuf_add(fuse_req_t req, std::string &buff , const char *name,
 
 static int reply_buf_limited(fuse_req_t req, std::string &buff, size_t off, size_t maxsize)
 {
-	if (off < buff.size())
-		return fuse_reply_buf(req, buff.c_str() + off,
-				      min(buff.size() - off, maxsize));
-	else
-		return fuse_reply_buf(req, NULL, 0);
+   if (off < buff.size())
+      return fuse_reply_buf(req, buff.c_str() + off,
+                  min(buff.size() - off, maxsize));
+   else
+      return fuse_reply_buf(req, NULL, 0);
 }
 
-static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
-			     off_t off, struct fuse_file_info *fi)
+static void gcfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
-	int iParentIndex = GCFS_INDEX_FROM_INODE(ino);
-	uint iTaskIndex = GCFS_TASK_FROM_INODE(ino);
-
-	std::string buff;
-	dirbuf_add(req, buff, ".", ino);
-	
-	if (ino == FUSE_ROOT_ID)
-	{
-		for(uint iIndex = 0; iIndex < g_sTaskManager.getTaskCount(); iIndex++)
-			dirbuf_add(req, buff, g_sTaskManager.getTask(iIndex)->m_sName.c_str(), GCFS_DIRINODE(iIndex, GCFS_DIR_TASK));
-	}
-	else switch(iParentIndex)
-	{
-		case GCFS_DIR_TASK:
-		{
-			dirbuf_add(req, buff, "..", FUSE_ROOT_ID);
-			dirbuf_add(req, buff, "config", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
-			dirbuf_add(req, buff, "data", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
-			if(g_sTaskManager.getTask(iTaskIndex)->isFinished())
-				dirbuf_add(req, buff, "result", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_CONFIG));
-
-			// Insert control files
-			for(uint iIndex = 0; iIndex < g_sTaskManager.getControlCount(); iIndex++)
-				dirbuf_add(req, buff, g_sTaskManager.getControl(iIndex)->m_sName, GCFS_CONFIGINODE(iTaskIndex, GCFS_CONTROL_FIRST + iIndex));
-			break;
-		}
-		
-		case GCFS_DIR_CONFIG:
-		{
-			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
-         GCFS_Task * pTask = g_sTaskManager.getTask(iTaskIndex);
-         for(uint iIndex = 0; iIndex < pTask->getConfigValueCount(); iIndex++)
-				dirbuf_add(req, buff, pTask->getConfigValue(iIndex)->m_sName, GCFS_CONFIGINODE(iTaskIndex, iIndex));
-			break;
-		}
-
-		case GCFS_DIR_DATA:
-		{
-			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
-			GCFS_Task::Files & mFiles = g_sTaskManager.getTask(iTaskIndex)->m_mDataFiles;
-			for(GCFS_Task::Files::iterator it = mFiles.begin(); it != mFiles.end() ; ++it)
-				dirbuf_add(req, buff, it->first.c_str(), it->second->m_iInode);
-			break;
-		}
-
-		case GCFS_DIR_RESULT:
-		{
-			dirbuf_add(req, buff, "..", GCFS_DIRINODE(iTaskIndex, GCFS_DIR_TASK));
-			GCFS_Task::Files & mFiles = g_sTaskManager.getTask(iTaskIndex)->m_mResultFiles;
-			for(GCFS_Task::Files::iterator it = mFiles.begin(); it != mFiles.end() ; ++it)
-				dirbuf_add(req, buff, it->first.c_str(), it->second->m_iInode);
-			break;
-		}
-		
-		default:
-			printf("Error readdir: inode: %d\n", (int)ino);
-			fuse_reply_err(req, ENOTDIR);
-			return;
-	}
-	
-	reply_buf_limited(req, buff, off, size);
+   GCFS_FileSystem* pFile = GCFS_FileSystem::getInodeFile(ino);
+   const GCFS_FileSystem::FileList* mFiles = NULL;
+   
+   if(pFile && (mFiles = pFile->getChildren()) != NULL)
+   {
+      std::string buff;
+      
+      dirbuf_add(req, buff, ".", ino);
+      
+      if(pFile->getParent())
+         dirbuf_add(req, buff, ".", pFile->getParent()->getInode());
+      
+      GCFS_FileSystem::FileList::const_iterator it;
+      for(it = mFiles->begin(); it != mFiles->end(); it++)
+         dirbuf_add(req, buff, it->first.c_str(), it->second->getInode());
+      
+      reply_buf_limited(req, buff, off, size);
+   }
+   else
+   {
+      printf("Error readdir: inode: %d\n", (int)ino);
+      fuse_reply_err(req, ENOTDIR);
+   }
 }
 
-static void gcfs_open(fuse_req_t req, fuse_ino_t ino,
-			  struct fuse_file_info *fi)
+static void gcfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	fi->fh = 0;
-	
-	if(ino > g_sTaskManager.m_uiFirstFileInode)
-	{
-		GCFS_Task::File *pFile = g_sTaskManager.getInodeFile(ino);
+   fi->fh = 0;
 
-		fi->fh = (uint64_t)pFile;
-		fi->direct_io = 1;
+   GCFS_FileSystem *pFile = GCFS_FileSystem::getInodeFile(ino);
+   
+   if(pFile)
+   {
+      if(pFile && pFile->open())
+      {
+         fi->fh = (uint64_t)pFile;
+         fi->direct_io = 1;
 
-		fuse_reply_open(req, fi);
-	}
-	else
-	{
-		uint iIndex = GCFS_INDEX_FROM_INODE(ino);
-		uint iTaskIndex = GCFS_TASK_FROM_INODE(ino);
-
-		// Use direct-io -> read does not care about file size
-		fi->direct_io = 1;
-
-		if (iIndex < GCFS_DIR_LAST)
-		{
-			fuse_reply_err(req, EISDIR);
-		}
-		else if(GCFS_IS_CONFIGINODE(iIndex))
-		{
-			int iConfigIndex = iIndex - GCFS_CONFIG_FIRST;
-			fi->fh = (uint64_t)g_sTaskManager.getTask(iTaskIndex)->getConfigValue(iConfigIndex);
-
-			fuse_reply_open(req, fi);
-		}
-		else if(GCFS_IS_CONTROLINODE(iIndex))
-		{
-			int iControlIndex = iIndex - GCFS_CONTROL_FIRST;
-			fi->fh = (uint64_t)g_sTaskManager.getControl(iControlIndex);
-
-			fuse_reply_open(req, fi);
-		}
-		else
-		{
-			printf("Error open: inode: %d\n", (int)ino);
-			fuse_reply_err(req, EACCES);
-		}
-	}
+         fuse_reply_open(req, fi);
+      }
+      else
+         fuse_reply_err(req, EISDIR);
+   }
+   else
+   {
+      printf("Error open: inode: %d\n", (int)ino);
+      fuse_reply_err(req, EACCES);
+   }
 }
 
-static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size,
-			  off_t off, struct fuse_file_info *fi)
+static void gcfs_close(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	if(ino > g_sTaskManager.m_uiFirstFileInode)
-	{
-		GCFS_Task::File *pFile = (GCFS_Task::File *)fi->fh;
-		fi->direct_io = 1;
-
-		char *buff = new char[size];
-		int hFile = pFile->getHandle();
-		lseek(hFile, off, SEEK_SET);
-		size = read(hFile, buff, size);
-
-		fuse_reply_buf(req, buff, size);
-		delete [] buff;
-	}
-	else
-	{
-		uint iIndex = GCFS_INDEX_FROM_INODE(ino);
-		uint iTaskIndex = GCFS_TASK_FROM_INODE(ino);
-
-		if(GCFS_IS_CONFIGINODE(iIndex))
-		{
-			GCFS_ConfigValue * pValue = (GCFS_ConfigValue *) fi->fh;
-
-			std::string buff;
-			pValue->PrintValue(buff);
-			buff += "\n";
-
-			reply_buf_limited(req, buff, off, size);
-		}
-		else if(GCFS_IS_CONTROLINODE(iIndex))
-		{
-			GCFS_Control * pControl = (GCFS_Control *) fi->fh;
-
-			std::string buff;
-			pControl->read(g_sTaskManager.getTask(iTaskIndex), buff);
-			buff += "\n";
-
-			reply_buf_limited(req, buff, off, size);
-		}
-		else
-		{
-			printf("Error read: inode: %d\n", (int)ino);
-			fuse_reply_err(req, EACCES);
-		}
-	}
+   if(fi->fh)
+      ((GCFS_FileSystem *)fi->fh)->close();
 }
 
-static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
-		       size_t size, off_t off, struct fuse_file_info *fi)
+static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
-	if(ino > g_sTaskManager.m_uiFirstFileInode)
-	{
-		GCFS_Task::File *pFile = (GCFS_Task::File *)fi->fh;
-		int hFile = pFile->getHandle();
-		lseek(hFile, off, SEEK_SET);
-		size = write(hFile, buf, size);
+   GCFS_FileSystem *pFile = (GCFS_FileSystem *)fi->fh;
+   
+   if(pFile)
+   {
+      fi->direct_io = 1;
 
-		fuse_reply_write(req, size);
-	}
-	else
-	{
-		uint iIndex = GCFS_INDEX_FROM_INODE(ino);
-		uint iTaskIndex = GCFS_TASK_FROM_INODE(ino);
+      std::string sBuff;
+      sBuff.reserve(size);
 
-		if(GCFS_IS_CONFIGINODE(iIndex))
-		{
-			GCFS_ConfigValue * pValue = (GCFS_ConfigValue *) fi->fh;
+      size = pFile->read(sBuff, off, size);
 
-			((char*)buf)[size] = 0;
-			if(pValue->SetValue(buf))
-				fuse_reply_write(req, size);
-			else
-				fuse_reply_err(req, EINVAL);
-		}
-		else if(GCFS_IS_CONTROLINODE(iIndex))
-		{
-			GCFS_Control * pControl = (GCFS_Control *) fi->fh;
+      fuse_reply_buf(req, sBuff.c_str(), size);
+   }
+   else
+   {
+      printf("Error read: inode: %d\n", (int)ino);
+      fuse_reply_err(req, EACCES);
+   }
+}
 
-			((char*)buf)[size] = 0;
-			if(pControl->write(g_sTaskManager.getTask(iTaskIndex), buf))
-				fuse_reply_write(req, size);
-			else
-				fuse_reply_err(req, EINVAL);
-		}
-		else
-		{
-			printf("Error write: inode: %d\n", (int)ino);
-			fuse_reply_err(req, EACCES);
-		}
-	}
+static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, off_t off, struct fuse_file_info *fi)
+{
+   GCFS_FileSystem *pFile = (GCFS_FileSystem *)fi->fh;
+   
+   if(pFile)
+   {
+      fi->direct_io = 1;
+
+      size = pFile->write(buf, off, size);
+      
+      fuse_reply_write(req, size);
+   }
+   else
+   {
+      printf("Error read: inode: %d\n", (int)ino);
+      fuse_reply_err(req, EACCES);
+   }
 }
 
 static void gcfs_readlink(fuse_req_t req, fuse_ino_t ino)
 {
-	uint iIndex = GCFS_INDEX_FROM_INODE(ino);
-	uint iTaskIndex = GCFS_TASK_FROM_INODE(ino);
+   GCFS_FileSystem *pFile = GCFS_FileSystem::getInodeFile(ino);
+   
+   if(pFile && pFile->getType() == GCFS_FileSystem::eTypeLink)
+   {
+      // TODO: fuse_reply_readlink(req, pFile->);
+      return;
+   }
 
-	if(iIndex == GCFS_CONTROL_EXECUTABLE && iTaskIndex < g_sTaskManager.getTaskCount())
-	{
-		fuse_reply_readlink(req, g_sTaskManager.getTask(iTaskIndex)->m_sExecutable.m_sValue.c_str());
-		return;
-	}
-
-	fuse_reply_err(req, EEXIST);
+   fuse_reply_err(req, EEXIST);
 }
 
-static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
-		       mode_t mode)
+static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
 {
-	if(parent == FUSE_ROOT_ID)
-	{
-		struct fuse_entry_param e = {0};
+   GCFS_FileSystem *pFile = GCFS_FileSystem::getInodeFile(parent);
+   GCFS_Directory * pDirectory = NULL;
+   GCFS_Permissions sPermissions;
+   
+   const fuse_ctx * pContext = fuse_req_ctx(req);
+   sPermissions.m_sMode = mode & 0777;
+   sPermissions.m_iGid = pContext->gid;
+   sPermissions.m_iUid = pContext->uid;
+   
+   if(pFile && (pDirectory = pFile->mkdir(name, &sPermissions)) != NULL)
+   {
+      struct fuse_entry_param e = {0};
 
-		GCFS_Task* pTask = NULL;
-		if((pTask = g_sTaskManager.addTask(name)))
-		{
-			const fuse_ctx * pContext = fuse_req_ctx(req);
-			pTask->m_sPermissions.m_sMode = mode & 0777;
-			pTask->m_sPermissions.m_iGid = pContext->gid;
-			pTask->m_sPermissions.m_iUid = pContext->uid;
+      e.ino = pDirectory->getInode();
+      e.attr_timeout = 1.0;
+      e.entry_timeout = 1.0;
+      gcfs_stat(e.ino, &e.attr);
 
-			e.ino = GCFS_DIRINODE(g_sTaskManager.getTaskCount()-1, GCFS_DIR_TASK);
-			e.attr_timeout = 1.0;
-			e.entry_timeout = 1.0;
-			gcfs_stat(e.ino, &e.attr);
+      fuse_reply_entry(req, &e);
 
-			fuse_reply_entry(req, &e);
-			return;
-		}
-		fuse_reply_err(req, EEXIST);
-		return;
-	}
+      return;
+   }
 
-	fuse_reply_err(req, EACCES);
+   fuse_reply_err(req, EEXIST);
 }
 
 static void gcfs_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-	if(parent == FUSE_ROOT_ID)
-	{
-		if(g_sTaskManager.getTaskIndex(name) >= 0)
-		{
-			g_sTaskManager.deleteTask(name);
-			
-			fuse_reply_err(req, 0);
-			return;
-		}
-		fuse_reply_err(req, ENOENT);
-		return;
-	}
+   GCFS_FileSystem *pParent = GCFS_FileSystem::getInodeFile(parent);
+   
+   if(pParent && pParent->unlink(name))
+   {
+      fuse_reply_err(req, 0);
+      return;
+   }
 
-	fuse_reply_err(req, EACCES);
+   fuse_reply_err(req, ENOENT);
 }
 
 static void gcfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-	int iParentIndex =  GCFS_INDEX_FROM_INODE(parent);
-	uint iTaskIndex = GCFS_TASK_FROM_INODE(parent);
-
-	if(parent == FUSE_ROOT_ID)
-	{
-		if(g_sTaskManager.getTaskIndex(name) >= 0)
-		{
-			g_sTaskManager.deleteTask(name);
-
-			fuse_reply_err(req, 0);
-			return;
-		}
-		fuse_reply_err(req, ENOENT);
-		return;
-	}
-	else if(iParentIndex == GCFS_DIR_DATA)
-	{
-		GCFS_Task * pTask;
-		if((pTask = g_sTaskManager.getTask(iTaskIndex)) && pTask->m_mDataFiles.find(name) != pTask->m_mDataFiles.end())
-		{
-			pTask->deleteDataFile(name);
-
-			fuse_reply_err(req, 0);
-			return;
-		}
-		fuse_reply_err(req, ENOENT);
-		return;
-	}
-
-	fuse_reply_err(req, EACCES);
+   GCFS_FileSystem *pParent = GCFS_FileSystem::getInodeFile(parent);
+   
+   if(pParent && pParent->unlink(name))
+   {
+      fuse_reply_err(req, 0);
+      return;
+   }
+   
+   fuse_reply_err(req, ENOENT);
 }
 
-static void gcfs_create(fuse_req_t req, fuse_ino_t parent, const char *name,
-			mode_t mode, struct fuse_file_info *fi)
+static void gcfs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi)
 {
-	int iParentIndex =  GCFS_INDEX_FROM_INODE(parent);
-	uint iTaskIndex = GCFS_TASK_FROM_INODE(parent);
+   GCFS_FileSystem *pParent = GCFS_FileSystem::getInodeFile(parent);
+   GCFS_FileSystem *pFile = NULL;
 
-	if(iParentIndex == GCFS_DIR_DATA)
+   if(pParent && (pFile = pParent->create(name, GCFS_FileSystem::eTypePhysicalFile)) != NULL)
+   {
+      struct fuse_entry_param e = {0};
+
+      e.ino = pFile->getInode();
+
+      fi->fh = (uint64_t)pFile;
+
+      gcfs_stat(e.ino, &e.attr);
+      
+      fuse_reply_create(req, &e, fi);
+      return;
+   }
+
+   fuse_reply_err(req, EACCES);
+}
+
+static void gcfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, dev_t rdev)
+{
+
+   GCFS_FileSystem *pParent = GCFS_FileSystem::getInodeFile(parent);
+   GCFS_FileSystem *pFile = NULL;
+   
+   if(mode & S_IFREG && pParent && (pFile = pParent->create(name, GCFS_FileSystem::eTypePhysicalFile)) != NULL)
 	{
 		struct fuse_entry_param e = {0};
 
-		GCFS_Task::File *pFile = g_sTaskManager.getTask(iTaskIndex)->createDataFile(name);
-
-		e.ino = pFile->m_iInode;
-
-		fi->fh = (uint64_t)pFile;
-
-		gcfs_stat(e.ino, &e.attr);
-		
-		fuse_reply_create(req, &e, fi);
-		return;
-	}
-
-	fuse_reply_err(req, EACCES);
-}
-
-static void gcfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
-		       mode_t mode, dev_t rdev)
-{
-
-	int iParentIndex =  GCFS_INDEX_FROM_INODE(parent);
-	uint iTaskIndex = GCFS_TASK_FROM_INODE(parent);
-
-	if(iParentIndex == GCFS_DIR_DATA && mode & S_IFREG)
-	{
-		struct fuse_entry_param e = {0};
-
-		GCFS_Task::File *pFile = g_sTaskManager.getTask(iTaskIndex)->createDataFile(name);
-
-		e.ino = pFile->m_iInode;
+		e.ino = pFile->getInode();
 
 		gcfs_stat(e.ino, &e.attr);
 
@@ -596,6 +406,7 @@ int init_fuse(int argc, char *argv[])
 	gcfs_oper.setattr	= gcfs_setattr;
 	gcfs_oper.readdir	= gcfs_readdir;
 	gcfs_oper.open		= gcfs_open;
+   gcfs_oper.release = gcfs_close;
 	gcfs_oper.read		= gcfs_read;
 	gcfs_oper.write	= gcfs_write;
 	gcfs_oper.mkdir	= gcfs_mkdir;

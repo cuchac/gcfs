@@ -1,62 +1,104 @@
-#include "gcfs_task.h"
-#include "gcfs_config.h"
-#include <fcntl.h>
-#include <stdio.h>
-#include <gcfs_controls.h>
 #include <string.h>
 #include <libgen.h>
+#include <fcntl.h>
+#include <stdio.h>
+
+#include "gcfs_task.h"
+#include "gcfs_config.h"
+#include <gcfs_controls.h>
 #include <gcfs_service.h>
 
-GCFS_Task::GCFS_Task(const char * sName): m_sName(sName),
-      m_eStatus(eNew),
-      m_pServiceData(NULL),
 
-      m_iMemory("memory", "1024"),
-      m_iProcesses("processes", "1"),
-      m_iTimeout("timeout", "3600"),
-      m_iService("service", NULL, &g_sConfig.m_vServiceNames),
-      m_sExecutable("executable", "./data/executable"),
-      m_sInput("input_file", ""),
-      m_sOutput("output_file", "output"),
-      m_sError("error_file", "error"),
-      m_sArguments("arguments", ""),
-      m_sEnvironment("environment"),
-
-      m_sPermissions()
+GCFS_ConfigDirectory::GCFS_ConfigDirectory(GCFS_Task* pTask):
+   GCFS_Directory(pTask),
+   m_iMemory(pTask, "1024"),
+   m_iProcesses(pTask, "1"),
+   m_iTimeout(pTask, "3600"),
+   m_iService(pTask, NULL, &g_sConfig.m_vServiceNames),
+   m_sExecutable(pTask, "./data/executable"),
+   m_sInput(pTask, ""),
+   m_sOutput(pTask, "output"),
+   m_sError(pTask, "error"),
+   m_sArguments(pTask, ""),
+   m_sEnvironment(pTask)
 {
-   assignVariable(&m_iMemory);
-   assignVariable(&m_iProcesses);
-   assignVariable(&m_iTimeout);
-   assignVariable(&m_iService);
-   assignVariable(&m_sExecutable);
-   assignVariable(&m_sInput);
-   assignVariable(&m_sOutput);
-   assignVariable(&m_sError);
-   assignVariable(&m_sArguments);
-   assignVariable(&m_sEnvironment);
-
+   addChild(&m_iMemory, "memory");
+   addChild(&m_iProcesses, "processes");
+   addChild(&m_iTimeout, "timeout");
+   addChild(&m_iService, "service");
+   addChild(&m_sExecutable, "executable");
+   addChild(&m_sInput, "input_file");
+   addChild(&m_sOutput, "output_file");
+   addChild(&m_sError, "error_file");
+   addChild(&m_sArguments, "arguments");
+   addChild(&m_sEnvironment, "environment");
+   
    // Set default service
    m_iService.SetValue(g_sConfig.m_sDefaultService.c_str());
 }
 
+GCFS_ConfigDirectory::~GCFS_ConfigDirectory()
+{
+   removeChild("memory", false);
+   removeChild("processes", false);
+   removeChild("timeout", false);
+   removeChild("service", false);
+   removeChild("executable", false);
+   removeChild("input_file", false);
+   removeChild("output_file", false);
+   removeChild("error_file", false);
+   removeChild("arguments", false);
+   removeChild("environment", false);
+}
+
+/***************************************************************************/
+GCFS_RootDirectory::GCFS_RootDirectory(GCFS_Directory* pParent): GCFS_Directory(pParent)
+{
+   
+}
+GCFS_Directory* GCFS_RootDirectory::mkdir(const char* sName, GCFS_Permissions* pPerm)
+{
+   GCFS_Task* pTask = new GCFS_Task(this);
+   pTask->m_sPermissions = *pPerm;
+   
+   this->addChild(pTask, sName);
+   
+   return pTask;
+}
+
+/***************************************************************************/
+GCFS_Task::GCFS_Task(GCFS_Directory * pParent): 
+   GCFS_Directory(pParent),
+   m_eStatus(eNew),
+   m_pServiceData(NULL),
+   m_sPermissions(),
+   
+   m_sControl(this),
+   m_sStatus(this),
+   m_sConfigDirectory(this),
+   m_sDataDir(this),
+   m_sResultDir(this)
+{
+   addChild(&m_sControl, "control");
+   //addChild(&m_sControl, "executable");
+   addChild(&m_sStatus, "status");
+}
+
 GCFS_Task::~GCFS_Task()
 {
-   GCFS_Service* pService = g_sConfig.GetService(m_iService);
+   GCFS_Service* pService = g_sConfig.GetService(m_sConfigDirectory.m_iService);
 
    if (pService)
       pService->deleteTask(this);
+   
+   removeChild( "control", false);
+   //removeChild("executable");
+   removeChild("status", false);
+}
 
-   // Delete all task files
-   Files::iterator it = m_mDataFiles.begin();
-   for (it = m_mDataFiles.begin(); it != m_mDataFiles.end(); it++)
-      g_sTaskManager.deleteFile(it->second);
-   for (it = m_mResultFiles.begin(); it != m_mResultFiles.end(); it++)
-      g_sTaskManager.deleteFile(it->second);
-
-   m_mDataFiles.clear();
-   m_mResultFiles.clear();
-   m_mInodeToDataFiles.clear();
-   m_mInodeToResultFiles.clear();
+GCFS_FileSystem::EType GCFS_Task::getType()
+{
+   return eTypeTask;
 }
 
 bool GCFS_Task::isFinished()
@@ -71,363 +113,130 @@ bool GCFS_Task::isSubmited()
 
 GCFS_ConfigValue* GCFS_Task::getConfigValue(const char * sName)
 {
-   return getConfigValue(getConfigValueIndex(sName));
+   return (GCFS_ConfigValue*)m_sConfigDirectory.getChild(sName);
 }
 
-GCFS_ConfigValue* GCFS_Task::getConfigValue(uint iIndex)
+const GCFS_FileSystem::FileList* GCFS_Task::getConfigValues()
 {
-   if (iIndex >= 0 && iIndex < m_vConfigValues.size())
-      return m_vConfigValues[iIndex];
-   else
-      return NULL;
+   return m_sConfigDirectory.getChildren();
 }
 
-uint GCFS_Task::getConfigValueCount()
+GCFS_File* GCFS_Task::createDataFile(const char * name)
 {
-   return m_vConfigValues.size();
-}
-
-uint GCFS_Task::getConfigValueIndex(const char * sName)
-{
-   std::map<std::string, int>::iterator it;
-   if ((it = m_mConfigNameToIndex.find(sName)) != m_mConfigNameToIndex.end())
-      return it->second;
-   else
-      return -1;
-}
-
-void GCFS_Task::assignVariable(GCFS_ConfigValue* pValue)
-{
-   m_vConfigValues.push_back(pValue);
-   m_mConfigNameToIndex[pValue->m_sName] = m_vConfigValues.size() - 1;
-   pValue->m_pTask = this;
-}
-
-GCFS_Task::File* GCFS_Task::createDataFile(const char * name)
-{
-   File *pFile;
+   GCFS_File *pFile;
 
    if ((pFile = getDataFile(name)))
       return pFile;
-
-   pFile = g_sTaskManager.createFile();
-
-   m_mDataFiles[name] = pFile;
-   m_mInodeToDataFiles[pFile->m_iInode] = pFile;
-   pFile->m_pTask = this;
-
-   chown(pFile->m_sPath.c_str(), m_sPermissions.m_iUid, m_sPermissions.m_iGid);
-
-   return pFile;
+   
+   return (GCFS_File*)m_sDataDir.create(name, GCFS_FileSystem::eTypePhysicalFile);
 }
 
 bool GCFS_Task::deleteDataFile(const char * name)
 {
-   File *pFile = getDataFile(name);
+   GCFS_File *pFile = getDataFile(name);
 
    if (!pFile)
       return false;
-
-   m_mDataFiles.erase(name);
-   m_mInodeToDataFiles.erase(pFile->m_iInode);
-
-   return g_sTaskManager.deleteFile(pFile);
-}
-
-GCFS_Task::File* GCFS_Task::getDataFile(const char * name)
-{
-   GCFS_Task::Files::iterator it;
-   if ((it = m_mDataFiles.find(name)) != m_mDataFiles.end())
-      return it->second;
-   else
-      return NULL;
-}
-
-const GCFS_Task::Files& GCFS_Task::getDataFiles()
-{
-   return m_mDataFiles;
-}
-
-GCFS_Task::File* GCFS_Task::createResultFile(const char * name, bool bCreate)
-{
-   File *pFile;
-
-   if ((pFile = getResultFile(name)))
-      return pFile;
-
-   pFile = g_sTaskManager.createFile(bCreate);
-
-   m_mResultFiles[name] = pFile;
-   m_mInodeToResultFiles[pFile->m_iInode] = pFile;
-   pFile->m_pTask = this;
-
-   chown(pFile->m_sPath.c_str(), m_sPermissions.m_iUid, m_sPermissions.m_iGid);
-
-   return pFile;
-}
-
-bool GCFS_Task::deleteResultFile(const char * name)
-{
-   File *pFile = getResultFile(name);
-
-   if (!pFile)
-      return false;
-
-   m_mResultFiles.erase(name);
-   m_mInodeToResultFiles.erase(pFile->m_iInode);
-
-   return g_sTaskManager.deleteFile(pFile);
-}
-
-GCFS_Task::File* GCFS_Task::getResultFile(const char * name)
-{
-   GCFS_Task::Files::iterator it;
-   if ((it = m_mResultFiles.find(name)) != m_mResultFiles.end())
-   {
-      it->second->getHandle();
-
-      return it->second;
-   }
-   else
-      return NULL;
-}
-
-const GCFS_Task::Files& GCFS_Task::getResultFiles()
-{
-   return m_mResultFiles;
-}
-
-GCFS_Task::File* GCFS_Task::getExecutableFile()
-{
-   const char * psFileName = basename((char*)m_sExecutable.m_sValue.c_str());
-
-   Files::iterator it;
-   if ((it = m_mDataFiles.find(psFileName)) == m_mDataFiles.end())
-      return NULL;
-
-   return it->second;
-}
-
-
-// GCFS_Task::File class
-
-int GCFS_Task::File::create()
-{
-   // If handle not opened, open it
-   if (!m_hFile)
-      m_hFile = open(m_sPath.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-
-   return m_hFile;
-}
-
-void GCFS_Task::File::unlink()
-{
-   // If handle opened, close it
-   closeHandle();
-
-   ::unlink(m_sPath.c_str());
-}
-
-int GCFS_Task::File::getHandle()
-{
-   // If handle not opened, open it
-   if (!m_hFile)
-      m_hFile = open(m_sPath.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
-
-   return m_hFile;
-}
-
-void GCFS_Task::File::closeHandle()
-{
-   if (m_hFile)
-   {
-      close(m_hFile);
-      m_hFile = 0;
-   }
-}
-
-// Task Manager
-
-GCFS_TaskManager::GCFS_TaskManager(): m_iTaskCount(0), m_uiFirstFileInode(-1)
-{
-
-   m_vControls.push_back(new GCFS_ControlControl());
-   m_vControls.push_back(new GCFS_ControlStatus());
-   m_vControls.push_back(new GCFS_ControlStatus());
-
-   m_vControls[2]->m_sName = "executable";
-
-   m_mControlNames["control"] = 0;
-   m_mControlNames["executable"] = 1;
-   m_mControlNames["status"] = 2;
-}
-
-GCFS_TaskManager::~GCFS_TaskManager()
-{
-   for (std::map<std::string, int>::iterator it = m_mTaskNames.begin(); it != m_mTaskNames.end();)
-      deleteTask((it++)->first.c_str());
-
-   for (std::vector<GCFS_Control*>::iterator it = m_vControls.begin(); it != m_vControls.end();it++)
-      delete *it;
-
-}
-
-GCFS_Task* GCFS_TaskManager::addTask(const char * sName)
-{
-   size_t iTaskIndex;
-   GCFS_Task* pTask = new GCFS_Task(sName);
-   if (m_iTaskCount == m_vTasks.size())
-   {
-      iTaskIndex = m_iTaskCount;
-      m_vTasks.push_back(pTask);
-   }
-   else
-   {
-      for (size_t iIndex = 0; iIndex < m_vTasks.size(); iIndex++)
-         if (m_vTasks[iIndex] == NULL)
-         {
-            iTaskIndex = iIndex;
-            m_vTasks[iTaskIndex] = pTask;
-            break;
-         }
-   }
-
-   m_mTaskNames[sName] = iTaskIndex;
-   m_iTaskCount++;
-
-   return pTask;
-}
-
-bool GCFS_TaskManager::deleteTask(const char * sName)
-{
-   int iIndex = getTaskIndex(sName);
-   if (iIndex < 0)
-      return false;
-
-   m_vTasks[iIndex] = NULL;
-   m_mTaskNames.erase(sName);
-
-   m_iTaskCount--;
-
-   return true;
-}
-
-size_t GCFS_TaskManager::getTaskCount()
-{
-   return (size_t)m_iTaskCount;
-}
-
-GCFS_Task* GCFS_TaskManager::getTask(uint iIndex)
-{
-   if(iIndex < m_vTasks.size())
-      return m_vTasks[iIndex];
-   else
-      return NULL;
-}
-
-GCFS_Task* GCFS_TaskManager::getTask(const char * sName)
-{
-   std::map<std::string, int>::iterator it;
-   if ((it = m_mTaskNames.find(sName)) != m_mTaskNames.end())
-      return m_vTasks[it->second];
-   else
-      return NULL;
-}
-
-int GCFS_TaskManager::getTaskIndex(const char * sName)
-{
-   std::map<std::string, int>::iterator it;
-   if ((it = m_mTaskNames.find(sName)) != m_mTaskNames.end())
-      return it->second;
-   else
-      return -1;
-}
-
-unsigned int GCFS_TaskManager::getInode(GCFS_Task::File* pFile)
-{
-   m_mInodesOwner[m_uiFirstFileInode] = pFile;
-
-   return m_uiFirstFileInode--;
-}
-
-bool GCFS_TaskManager::putInode(int iInode)
-{
-   std::map<int, GCFS_Task::File *>::iterator it;
-   if ((it = m_mInodesOwner.find(iInode)) == m_mInodesOwner.end())
-      return false;
-
-   m_mInodesOwner.erase(it);
-   return true;
-}
-
-GCFS_Task::File* GCFS_TaskManager::getInodeFile(int iInode)
-{
-   std::map<int, GCFS_Task::File *>::iterator it;
-   if ((it = m_mInodesOwner.find(iInode)) != m_mInodesOwner.end())
-   {
-      it->second->getHandle();
-      return it->second;
-   }
-   else
-      return NULL;
-}
-
-GCFS_Task::File* GCFS_TaskManager::createFile(bool bCreate)
-{
-   GCFS_Task::File *tmp = new GCFS_Task::File();
-
-   int iInode = getInode(tmp);
-   char buff[32];
-   snprintf(buff, sizeof(buff), "%x", iInode);
-
-   tmp->m_sPath = g_sConfig.m_sDataDir + "/" + buff;
-   tmp->m_iInode = iInode;
-
-   if (bCreate)
-      tmp->create();
-
-   return tmp;
-}
-
-bool GCFS_TaskManager::deleteFile(GCFS_Task::File* pFile)
-{
-   if (!pFile)
-      return false;
-
-   pFile->unlink();
-
-   putInode(pFile->m_iInode);
 
    delete pFile;
 
    return true;
 }
 
-// Control files
-size_t GCFS_TaskManager::getControlCount()
+GCFS_File* GCFS_Task::getDataFile(const char * name)
 {
-   return (int)m_vControls.size();
+   return (GCFS_File*)m_sDataDir.getChild(name);
 }
 
-GCFS_Control* GCFS_TaskManager::getControl(int iIndex)
+const GCFS_FileSystem::FileList* GCFS_Task::getDataFiles()
 {
-   return m_vControls[iIndex];
+   return m_sDataDir.getChildren();
 }
 
-GCFS_Control* GCFS_TaskManager::getControl(const char * sName)
+GCFS_File* GCFS_Task::createResultFile(const char * name, bool bCreate)
 {
-   std::map<std::string, int>::iterator it;
-   if ((it = m_mControlNames.find(sName)) != m_mControlNames.end())
-      return m_vControls[it->second];
-   else
-      return NULL;
+   GCFS_File *pFile;
+   
+   if ((pFile = getDataFile(name)))
+      return pFile;
+   
+   pFile = (GCFS_File*)m_sResultDir.create(name, GCFS_FileSystem::eTypePhysicalFile);
+   
+   if(bCreate)
+      pFile->open();
+
+   return pFile;
 }
 
-int GCFS_TaskManager::getControlIndex(const char * sName)
+bool GCFS_Task::deleteResultFile(const char * name)
 {
-   std::map<std::string, int>::iterator it;
-   if ((it = m_mControlNames.find(sName)) != m_mControlNames.end())
-      return it->second;
-   else
-      return -1;
+   GCFS_File *pFile = getResultFile(name);
+   
+   if (!pFile)
+      return false;
+   
+   delete pFile;
+   
+   return true;
+}
+
+GCFS_File* GCFS_Task::getResultFile(const char * name)
+{
+   return (GCFS_File*)m_sResultDir.getChild(name);
+}
+
+const GCFS_FileSystem::FileList* GCFS_Task::getResultFiles()
+{
+   return m_sResultDir.getChildren();
+}
+
+GCFS_File* GCFS_Task::getExecutableFile()
+{
+   const char * psFileName = basename((char*)m_sConfigDirectory.m_sExecutable.m_sValue.c_str());
+
+   return (GCFS_File*)m_sDataDir.getChild(psFileName);
+}
+
+
+// Task Manager
+/***************************************************************************/
+GCFS_TaskManager::GCFS_TaskManager():
+   m_pRootDirectory(NULL)
+{
+   
+}
+
+GCFS_TaskManager::~GCFS_TaskManager()
+{
+
+}
+
+void GCFS_TaskManager::Init()
+{
+   m_pRootDirectory = new GCFS_Directory(NULL);
+}
+
+
+GCFS_Task* GCFS_TaskManager::addTask(const char * sName, GCFS_Directory * pParent)
+{
+   if(!pParent)
+      pParent = m_pRootDirectory;
+
+   return (GCFS_Task*)pParent->mkdir(sName, &g_sConfig.m_sPermissions);
+}
+
+bool GCFS_TaskManager::deleteTask(const char * sName, GCFS_Directory * pParent)
+{
+   if(!pParent)
+      pParent = m_pRootDirectory;
+
+   return pParent->unlink(sName);
+}
+
+GCFS_Task* GCFS_TaskManager::getTask(const char * sName, GCFS_Directory * pParent)
+{
+   if(!pParent)
+      pParent = m_pRootDirectory;
+   
+   return (GCFS_Task*)pParent->getChild(sName);
 }

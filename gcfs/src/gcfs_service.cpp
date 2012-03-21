@@ -33,17 +33,17 @@ bool GCFS_Service::configure(CSimpleIniA& pConfig)
 
 bool GCFS_Service::customizeTask(GCFS_Task* pTask)
 {
-	std::map<std::string, int >::iterator itConfig;
+   const GCFS_FileSystem::FileList* mConfigValues = pTask->getConfigValues();
+   GCFS_FileSystem::FileList::const_iterator itConfig;
 	std::map<std::string, std::string >::iterator itDefault;
-	for(uint iIndex = 0; iIndex < pTask->getConfigValueCount(); iIndex++)
+   for(itConfig = mConfigValues->begin(); itConfig != mConfigValues->end(); itConfig++)
    {
-      GCFS_ConfigValue * pValue = pTask->getConfigValue(iIndex);
-      if((itDefault = m_mDefaults.find(pValue->m_sName)) != m_mDefaults.end())
-         pValue->SetValue(itDefault->second.c_str());
+      if((itDefault = m_mDefaults.find(itConfig->first)) != m_mDefaults.end())
+         itConfig->second->write(itDefault->second.c_str(), 0, itDefault->second.length());
    }
 
 	for(itDefault = m_mEnvironment.begin(); itDefault != m_mEnvironment.end(); itDefault++)
-		pTask->m_sEnvironment.SetValue(itDefault->first.c_str(), itDefault->second.c_str());
+		pTask->m_sConfigDirectory.m_sEnvironment.SetValue(itDefault->first.c_str(), itDefault->second.c_str());
 
 	return true;
 }

@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 
+
+
 #ifdef _WIN32
 	//#include <windows.h>
 #else
@@ -15,7 +17,6 @@
 	#include <pwd.h>	
 
 #endif
-
 
 
 bool GCFS_Utils::getHomePath(std::string &buffer)
@@ -110,4 +111,56 @@ bool GCFS_Utils::chmodRecursive(const char *sPath, mode_t iMode)
 {
 	// nftw does not support user data - ignore it and assume 0777
 	return nftw(sPath, chmod_cb, 64, FTW_DEPTH | FTW_MOUNT | FTW_PHYS) != 0;
+}
+
+std::string GCFS_Utils::TrimStr(const std::string& Src, const std::string& c)
+{
+   size_t p2 = Src.find_last_not_of(c);
+   if (p2 == std::string::npos) return std::string();
+   size_t p1 = Src.find_first_not_of(c);
+   if (p1 == std::string::npos) p1 = 0;
+   return Src.substr(p1, (p2-p1)+1);
+}
+
+GCFS_Utils::keyValue_t GCFS_Utils::ParseAssignment(char * string)
+{
+   char *pChar = NULL, *pKey = NULL, *pValue = NULL;
+   if((pKey = strtok_r(string, GCFS_CONFIG_ASSIGNCHAR, &pChar)) != NULL &&
+      (pValue = strtok_r(NULL, GCFS_CONFIG_ASSIGNCHAR, &pChar)) != NULL)
+      // Return key-value pair
+      return keyValue_t(pKey, pValue);
+   
+   // No assignment -> it is command
+   return keyValue_t(string, NULL);
+}
+
+bool GCFS_Utils::ParseConfigString(char * string, GCFS_Utils::keyValueArray_t& vValues)
+{
+   // replace $(process) with @(process) to get rid of '$' character. It is delimiter as well
+   ReplaceToken(string, "$(process)", "@(process)");
+   
+   // Parse all the commands/assignments
+   char * pPos = NULL;
+   char * pToken = strtok_r(string, GCFS_CONFIG_DELIMITERS, &pPos);
+   
+   while(pToken != NULL)
+   {
+      ReplaceToken(pToken, "@(process)", "$(process)");
+      
+      vValues.push_back(ParseAssignment(pToken));
+      
+      pToken = strtok_r(NULL, GCFS_CONFIG_DELIMITERS, &pPos);
+   }
+   
+   return true;
+}
+
+void GCFS_Utils::ReplaceToken(char * sString, const char * sSearch, const char * sReplacement)
+{
+   char * pPos = sString;
+   while((pPos = strcasestr(pPos, sSearch)) != NULL)
+   {
+      memcpy(pPos, sReplacement, strlen(sReplacement));
+      pPos++;
+   }
 }

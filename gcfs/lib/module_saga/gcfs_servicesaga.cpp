@@ -46,11 +46,11 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	chmod(sSubmitDir.c_str(), 0777);
 
 	//Link executable into submit directory
-	GCFS_Task::File* pExecutableFile = pTask->getExecutableFile();
-	std::string sExecutable = sSubmitDir+basename((char*)pTask->m_sExecutable.m_sValue.c_str());
-	link(pExecutableFile->m_sPath.c_str(), sExecutable.c_str());
+	GCFS_File* pExecutableFile = pTask->getExecutableFile();
+	std::string sExecutable = sSubmitDir+basename((char*)pTask->m_sConfigDirectory.m_sExecutable.m_sValue.c_str());
+	link(pExecutableFile->getPath(), sExecutable.c_str());
 	chmod(sExecutable.c_str(), 0777);
-	pExecutableFile->closeHandle();
+	pExecutableFile->close();
 
 	// Fill-in executable parameters - parse arguments string into parameters
 	std::vector <std::string> vArguments;
@@ -60,24 +60,24 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	for (uint iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
 		vArguments.push_back(sArguments.we_wordv[iIndex]);
 	wordfree(&sArguments);*/
-	vArguments.push_back(pTask->m_sArguments.m_sValue);
+   vArguments.push_back(pTask->m_sConfigDirectory.m_sArguments.m_sValue);
 
 	// Fill-in executable environment
 	std::vector <std::string> vEnvironment;
 	GCFS_ConfigEnvironment::values_t::iterator it;
-	for(it = pTask->m_sEnvironment.m_mValues.begin(); it != pTask->m_sEnvironment.m_mValues.end(); it++)
+   for(it = pTask->m_sConfigDirectory.m_sEnvironment.m_mValues.begin(); it != pTask->m_sConfigDirectory.m_sEnvironment.m_mValues.end(); it++)
 		vEnvironment.push_back(it->first+"="+it->second);
 	
 	// Fill data files to send
 	std::vector <std::string> vDataFiles;
-	const GCFS_Task::Files vTaskDataFiles =  pTask->getDataFiles();
-	for(GCFS_Task::Files::const_iterator it = vTaskDataFiles.begin(); it != vTaskDataFiles.end(); it++)
+	const GCFS_FileSystem::FileList* vTaskDataFiles = pTask->getDataFiles();
+   for(GCFS_FileSystem::FileList::const_iterator it = vTaskDataFiles->begin(); it != vTaskDataFiles->end(); it++)
 	{
-		if(it->first != basename((char*)pTask->m_sExecutable.m_sValue.c_str())) // Ececutable is transferet automagically
+      if(it->first != basename((char*)pTask->m_sConfigDirectory.m_sExecutable.m_sValue.c_str())) // Ececutable is transferet automagically
 		{
 			// Hard-Link the file to subit directory and add to files to transfer
 			std::string linkTarget = sSubmitDir+it->first;
-			link(it->second->m_sPath.c_str(), linkTarget.c_str());
+         link(((GCFS_File*)it->second)->getPath(), linkTarget.c_str());
 			chmod(linkTarget.c_str(), 0777);
 			vDataFiles.push_back(it->first + " > " + it->first);
 		}
@@ -85,7 +85,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 
 	// Print number of processes to temporary buffer
 	char sProcesses[32] = {};
-	snprintf(sProcesses, ARRAYSIZE(sProcesses), "%d", (int)pTask->m_iProcesses);
+   snprintf(sProcesses, ARRAYSIZE(sProcesses), "%d", (int)pTask->m_sConfigDirectory.m_iProcesses);
 
 	saga::job::description sJobDescription;
 	
@@ -93,10 +93,10 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	{
 		sJobDescription.set_attribute(sja::description_interactive, sa::common_false);
 		sJobDescription.set_attribute(sja::description_executable, sExecutable);
-		sJobDescription.set_attribute(sja::description_error, pTask->m_sError);
-		sJobDescription.set_attribute(sja::description_output, pTask->m_sOutput);
-		if(!pTask->m_sInput.m_sValue.empty())
-			sJobDescription.set_attribute(sja::description_input, pTask->m_sInput);
+      sJobDescription.set_attribute(sja::description_error, pTask->m_sConfigDirectory.m_sError);
+      sJobDescription.set_attribute(sja::description_output, pTask->m_sConfigDirectory.m_sOutput);
+      if(!pTask->m_sConfigDirectory.m_sInput.m_sValue.empty())
+         sJobDescription.set_attribute(sja::description_input, pTask->m_sConfigDirectory.m_sInput);
 		sJobDescription.set_attribute(sja::description_number_of_processes, sProcesses);
 
 		sJobDescription.set_vector_attribute(sja::description_arguments, vArguments);
@@ -258,10 +258,9 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 	if(sMessage)
 	{
 		// Write error into error file
-		GCFS_Task::File* error = pTask->createResultFile("error");
+		GCFS_File* error = pTask->createResultFile("error");
 
-		int hFile = error->getHandle();
-		write(hFile, sMessage, strlen(sMessage));
+      error->write(sMessage, -1, strlen(sMessage));
 
 		// Also announce on stdout for debug
 		printf("Saga Error: %s\n", sMessage);
@@ -276,7 +275,7 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 	}
 
 	// Remove executable from submitdir to prevent copying to result dir
-	std::string sExecutable = sSubmitDir+basename((char*)pTask->m_sExecutable.m_sValue.c_str());
+	std::string sExecutable = sSubmitDir+basename((char*)pTask->m_sConfigDirectory.m_sExecutable.m_sValue.c_str());
 	unlink(sExecutable.c_str());
 
 	DIR* pDir = opendir(sSubmitDir.c_str());
@@ -289,10 +288,10 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 		if(!isFile(sFilePath.c_str()))
 			continue;
 
-		GCFS_Task::File* pNewFile = pTask->createResultFile(pDirFile->d_name, false);
+		GCFS_File* pNewFile = pTask->createResultFile(pDirFile->d_name, false);
 
-		if(rename(sFilePath.c_str(), pNewFile->m_sPath.c_str()))
-			printf("Error: Cannot move result file '%s' to '%s'\n", sFilePath.c_str(), pNewFile->m_sPath.c_str());
+		if(rename(sFilePath.c_str(), pNewFile->getPath()))
+			printf("Error: Cannot move result file '%s' to '%s'\n", sFilePath.c_str(), pNewFile->getPath());
 	}
 
 	closedir(pDir);

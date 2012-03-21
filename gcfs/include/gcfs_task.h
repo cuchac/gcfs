@@ -3,6 +3,7 @@
 
 #include "gcfs.h"
 #include "gcfs_config_values.h"
+#include "gcfs_controls.h"
 
 #include <string>
 #include <vector>
@@ -11,8 +12,38 @@
 
 class GCFS_Control;
 
+// Task Configuration Directory
+class GCFS_ConfigDirectory : public GCFS_Directory
+{
+public:
+                                      GCFS_ConfigDirectory(GCFS_Task * pTask);
+    virtual                          ~GCFS_ConfigDirectory();
+public:
+   GCFS_ConfigInt                     m_iMemory;
+   GCFS_ConfigInt                     m_iProcesses;
+   GCFS_ConfigInt                     m_iTimeout;
+   GCFS_ConfigService                 m_iService;
+   GCFS_ConfigString                  m_sExecutable;
+   GCFS_ConfigString                  m_sInput;
+   GCFS_ConfigString                  m_sOutput;
+   GCFS_ConfigString                  m_sError;
+   GCFS_ConfigString                  m_sArguments;
+   GCFS_ConfigEnvironment             m_sEnvironment;
+};
+
+// Root Directory
+class GCFS_RootDirectory : public GCFS_Directory
+{
+public:
+                                       GCFS_RootDirectory(GCFS_Directory* pParent);
+
+public:
+    virtual GCFS_Directory*            mkdir(const char* name, GCFS_Permissions* pPerm);
+};
+
 // Task Configuration
-class GCFS_Task {
+class GCFS_Task : public GCFS_Directory 
+{
     
 public:
    // Define task statuses
@@ -27,137 +58,67 @@ public:
    } Status;
 
 public:
-   GCFS_Task(const char * sName);
-   ~GCFS_Task();
+                                       GCFS_Task(GCFS_Directory * pParent);
+                                      ~GCFS_Task();
+                                      
+   virtual EType                       getType();
+public:
+   bool                                isFinished();
+   bool                                isSubmited();
 
 public:
-   bool                               isFinished();
-   bool                               isSubmited();
-
-public:
-   std::string                        m_sName;
-
-   Status                             m_eStatus;
-
-   void*                              m_pServiceData; // Data space for service
-
-// Task Configuration Values
-public:
-   GCFS_ConfigInt                     m_iMemory;
-   GCFS_ConfigInt                     m_iProcesses;
-   GCFS_ConfigInt                     m_iTimeout;
-   GCFS_ConfigService                 m_iService;
-   GCFS_ConfigString                  m_sExecutable;
-   GCFS_ConfigString                  m_sInput;
-   GCFS_ConfigString                  m_sOutput;
-   GCFS_ConfigString                  m_sError;
-   GCFS_ConfigString                  m_sArguments;
-   GCFS_ConfigEnvironment             m_sEnvironment;
-
-// Mapping of confg values for dynamic access
-   GCFS_ConfigValue*                  getConfigValue(const char * sName);
-   GCFS_ConfigValue*                  getConfigValue(uint iIndex);
-   uint                               getConfigValueCount();
-   uint                               getConfigValueIndex(const char* sName);
-
-private:
-   std::vector<GCFS_ConfigValue*>     m_vConfigValues;
-   std::map<std::string, int>         m_mConfigNameToIndex;
-
-private:
-   void                               assignVariable(GCFS_ConfigValue* pValue);
-
-// File management
-public:
-   class File {
-   public:
-      File():m_iInode(0), m_pTask(NULL), m_hFile(0) {};
-
-   public:
-      int             create();
-      void            unlink();
-      int             getHandle();
-      void            closeHandle();
-
-   public:
-      unsigned int    m_iInode;
-      std::string     m_sPath;
-      GCFS_Task*      m_pTask;
-
-   private:
-      int             m_hFile;
-   };
-
-   typedef std::map<std::string, File*> Files;
-
-   File*                                 createDataFile(const char * name);
-   bool                                  deleteDataFile(const char * name);
-   File*                                 getDataFile(const char * name);
-   const GCFS_Task::Files&               getDataFiles();
-   File*                                 createResultFile(const char* name, bool bCreate = true);
-   bool                                  deleteResultFile(const char * name);
-   File*                                 getResultFile(const char * name);
-   const GCFS_Task::Files&               getResultFiles();
-
-   File*                                 getExecutableFile();
-
-
-// Data and result files mapping from name to inode number
-public:
-   Files                                 m_mDataFiles;
-   std::map<int, File*>                  m_mInodeToDataFiles;
-   Files                                 m_mResultFiles;
-   std::map<int, File*>                  m_mInodeToResultFiles;
-
-   GCFS_Permissions                      m_sPermissions;
-};
-
-class GCFS_TaskManager {
-public:
-   GCFS_TaskManager();
-   ~GCFS_TaskManager();
-public:
-// Manage tasks
-   GCFS_Task*                   addTask(const char * sName);
-   bool                         deleteTask(const char * sName);
-
-   size_t                       getTaskCount();
-
-   GCFS_Task*                   getTask(uint iIndex);
-   GCFS_Task*                   getTask(const char * sName);
-   int                          getTaskIndex(const char * sName);
-
-private:
-   std::vector<GCFS_Task*>      m_vTasks;
-   std::map<std::string, int>   m_mTaskNames;
-   size_t                       m_iTaskCount;
-
-// Inode allocation and management
-public:
-   unsigned int                 getInode(GCFS_Task::File *pFile);
-   bool                         putInode(int iInode);
-
-   GCFS_Task::File*             getInodeFile(int iInode);
-
-   GCFS_Task::File*             createFile(bool bCreate = true);
-   bool                         deleteFile(GCFS_Task::File *pFile);
-
-   unsigned int                 m_uiFirstFileInode;
-
-private:
-   std::map<int, GCFS_Task::File*> m_mInodesOwner;
-
+   std::string                         m_sName;
+   Status                              m_eStatus;
+   void*                               m_pServiceData; // Data space for service
+   GCFS_Permissions                    m_sPermissions;
+   
 // Control files
 public:
-   size_t                       getControlCount();
+   GCFS_ControlControl                 m_sControl;
+   GCFS_ControlStatus                  m_sStatus;
 
-   GCFS_Control*                getControl(int iIndex);
-   GCFS_Control*                getControl(const char * sName);
-   int                          getControlIndex(const char * sName);
+// Configuration directory
+public:
+   GCFS_ConfigValue*                  getConfigValue(const char * sName);
+   const GCFS_FileSystem::FileList*   getConfigValues();
+   GCFS_ConfigDirectory               m_sConfigDirectory;
 
-private:
-   std::vector<GCFS_Control*>   m_vControls;
-   std::map<std::string,int>    m_mControlNames;
+// Task Data and Result directories
+public:
+   GCFS_File*                          createDataFile(const char * name);
+   bool                                deleteDataFile(const char * name);
+   GCFS_File*                          getDataFile(const char * name);
+   const GCFS_FileSystem::FileList*    getDataFiles();
+   GCFS_File*                          createResultFile(const char* name, bool bCreate = true);
+   bool                                deleteResultFile(const char * name);
+   GCFS_File*                          getResultFile(const char * name);
+   const GCFS_FileSystem::FileList*    getResultFiles();
+
+   GCFS_File*                          getExecutableFile();
+
+protected:
+   GCFS_Directory                      m_sDataDir;
+   GCFS_Directory                      m_sResultDir;
+};
+
+class GCFS_TaskManager 
+{
+public:
+                                       GCFS_TaskManager();
+                                      ~GCFS_TaskManager();
+
+public:
+   void                                Init();
+
+public:
+   GCFS_Directory*                     m_pRootDirectory;
+   
+// Manage tasks
+public:
+   GCFS_Task*                          addTask(const char* sName, GCFS_Directory* pParent = NULL);
+   bool                                deleteTask(const char* sName, GCFS_Directory* pParent = NULL);
+
+   GCFS_Task*                          getTask(const char* sName, GCFS_Directory* pParent = NULL);
 };
 
 #endif // GCFS_TASK_H

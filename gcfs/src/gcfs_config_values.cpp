@@ -8,57 +8,22 @@
 #include <gcfs.h>
 #include <gcfs_config.h>
 #include <gcfs_service.h>
+#include <gcfs_utils.h>
 
-std::string GCFS_ConfigValue::TrimStr(const std::string& Src, const std::string& c)
+GCFS_ConfigValue::GCFS_ConfigValue(GCFS_Directory * pParent):GCFS_FileSystem(pParent), m_iSize(0)
 {
-	size_t p2 = Src.find_last_not_of(c);
-	if (p2 == std::string::npos) return std::string();
-	size_t p1 = Src.find_first_not_of(c);
-	if (p1 == std::string::npos) p1 = 0;
-	return Src.substr(p1, (p2-p1)+1);
-}
-
-GCFS_ConfigValue::keyValue_t GCFS_ConfigValue::ParseAssignment(char * string)
-{
-   char *pChar = NULL, *pKey = NULL, *pValue = NULL;
-   if((pKey = strtok_r(string, GCFS_CONFIG_ASSIGNCHAR, &pChar)) != NULL &&
-      (pValue = strtok_r(NULL, GCFS_CONFIG_ASSIGNCHAR, &pChar)) != NULL)
-      // Return key-value pair
-      return keyValue_t(pKey, pValue);
-
-   // No assignment -> it is command
-   return keyValue_t(string, NULL);
-}
-
-bool GCFS_ConfigValue::ParseConfigString(char * string, GCFS_ConfigValue::keyValueArray_t& vValues)
-{
-   // replace $(process) with @(process) to get rid of '$' character. It is delimiter as well
-   ReplaceToken(string, "$(process)", "@(process)");
    
-   // Parse all the commands/assignments
-   char * pPos = NULL;
-   char * pToken = strtok_r(string, GCFS_CONFIG_DELIMITERS, &pPos);
-
-   while(pToken != NULL)
-   {
-      ReplaceToken(pToken, "@(process)", "$(process)");
-      
-      vValues.push_back(ParseAssignment(pToken));
-
-      pToken = strtok_r(NULL, GCFS_CONFIG_DELIMITERS, &pPos);
-   }
-
-   return true;
 }
 
-void GCFS_ConfigValue::ReplaceToken(char * sString, const char * sSearch, const char * sReplacement)
+GCFS_ConfigValue::~GCFS_ConfigValue()
 {
-   char * pPos = sString;
-   while((pPos = strcasestr(pPos, sSearch)) != NULL)
-   {
-      memcpy(pPos, sReplacement, strlen(sReplacement));
-      pPos++;
-   }
+   
+}
+
+/***************************************************************************/
+GCFS_ConfigInt::GCFS_ConfigInt(GCFS_Directory * pParent, const char *sDefault) :GCFS_ConfigValue(pParent) 
+{
+   this->SetValue(sDefault);
 }
 
 bool GCFS_ConfigInt::SetValue(const char* sValue, size_t iOffset)
@@ -82,9 +47,16 @@ GCFS_ConfigInt::operator int()
 	return m_iValue;
 }
 
+/***************************************************************************/
+GCFS_ConfigString::GCFS_ConfigString(GCFS_Directory * pParent, const char *sDefault): GCFS_ConfigValue(pParent) 
+{
+   this->SetValue(sDefault);
+   
+}
+
 bool GCFS_ConfigString::SetValue(const char* sValue, size_t iOffset)
 {
-	m_sValue = TrimStr(sValue);
+	m_sValue = GCFS_Utils::TrimStr(sValue);
 
 	return true;
 }
@@ -101,8 +73,8 @@ GCFS_ConfigString::operator std::string()
 	return m_sValue;
 }
 
-GCFS_ConfigChoice::GCFS_ConfigChoice(const char *sName, const char *sDefault, choices_t * pvChoices)
-	:GCFS_ConfigValue(sName)
+/***************************************************************************/
+GCFS_ConfigChoice::GCFS_ConfigChoice(GCFS_Directory * pParent, const char *sDefault, choices_t * pvChoices) :GCFS_ConfigValue(pParent)
 {
 	if(pvChoices)
 		m_vChoices = *pvChoices;
@@ -118,7 +90,7 @@ bool GCFS_ConfigChoice::SetValue(const char* sValue, size_t iOffset)
 	if(!sValue)
 		return false;
 	
-	std::string value = TrimStr(sValue);
+   std::string value = GCFS_Utils::TrimStr(sValue);
 	
 	uint iVal = -1;
 	for(uint iIndex = 0; iIndex < m_vChoices.size(); iIndex ++)
@@ -157,6 +129,12 @@ GCFS_ConfigChoice::operator int()
 	return m_iValue;
 }
 
+/***************************************************************************/
+GCFS_ConfigEnvironment::GCFS_ConfigEnvironment(GCFS_Directory * pParent, const char* sDefault): GCFS_ConfigValue(pParent) 
+{
+   this->SetValue(sDefault);
+}
+
 bool GCFS_ConfigEnvironment::SetValue(const char* sValue, size_t iOffset)
 {
 	if(!sValue)
@@ -169,7 +147,7 @@ bool GCFS_ConfigEnvironment::SetValue(const char* sValue, size_t iOffset)
 	else // Dont allow to write in the middle
 		return false; 
 
-	std::string sNewValue = TrimStr(sValue);
+   std::string sNewValue = GCFS_Utils::TrimStr(sValue);
 
 	wordexp_t sArguments;
 	if(wordexp(sNewValue.c_str(), &sArguments, 0))
@@ -195,7 +173,7 @@ bool GCFS_ConfigEnvironment::SetValue(const char* sKey, const char* sValue)
 	if(!sValue || !sKey)
 		return false;
 
-	std::string sNewValue = TrimStr(sValue);
+   std::string sNewValue = GCFS_Utils::TrimStr(sValue);
 
 	m_mValues[sKey]=sNewValue;
 	
@@ -216,6 +194,14 @@ GCFS_ConfigEnvironment::operator values_t()
 	return m_mValues;
 }
 
+/***************************************************************************/
+GCFS_ConfigService::GCFS_ConfigService(GCFS_Directory * pParent, const char* sDefault, GCFS_ConfigChoice::choices_t* pvChoices)
+   :GCFS_ConfigChoice(pParent, sDefault, pvChoices) 
+{
+   this->SetValue(sDefault);
+   
+}
+
 bool GCFS_ConfigService::SetValue(const char* sValue, size_t iOffset)
 {	
 	bool bRet = GCFS_ConfigChoice::SetValue(sValue, iOffset);
@@ -223,7 +209,7 @@ bool GCFS_ConfigService::SetValue(const char* sValue, size_t iOffset)
 	if(!bRet)
 		return bRet;
 
-	g_sConfig.GetService(m_iValue)->customizeTask(m_pTask);
+	g_sConfig.GetService(m_iValue)->customizeTask(getParentTask());
 	
 	return true;
 }

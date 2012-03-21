@@ -8,11 +8,12 @@
 #include <string.h>
 #include <stdio.h>
 
-std::string GCFS_Control::trimStr(const std::string& Src, const std::string& c)
+GCFS_Control::GCFS_Control(GCFS_Task* pTask): GCFS_FileSystem(pTask)
 {
-   return GCFS_ConfigValue::TrimStr(Src, c);
+   
 }
 
+/***************************************************************************/
 const char * GCFS_ControlStatus::statuses[] =
 {
    "new",
@@ -24,27 +25,37 @@ const char * GCFS_ControlStatus::statuses[] =
    "suspended",
 };
 
-bool GCFS_ControlStatus::read(GCFS_Task* pTask, std::string &buff)
+GCFS_ControlStatus::GCFS_ControlStatus(GCFS_Task* pTask): GCFS_Control(pTask)
 {
-   GCFS_Service* pService = g_sConfig.GetService(pTask->m_iService.m_iValue);
+   
+}
+
+ssize_t GCFS_ControlStatus::read(std::string sBuffer, off_t uiOffset, size_t uiSize)
+{
+   GCFS_Task* pTask = getParentTask();
+   if(!pTask)
+      return 0;
+   
+   GCFS_Service* pService = g_sConfig.GetService(pTask->m_sConfigDirectory.m_iService.m_iValue);
    int status = (int)pService->getTaskStatus(pTask);
    const std::string id = pService->getTaskId(pTask);
-
+   
    char cbuff[32];
    snprintf(cbuff, ARRAYSIZE(cbuff), "%d\t%s", status, statuses[status]);
-
-   buff = cbuff;
-   buff += "\n"+id;
-
+   
+   sBuffer = cbuff;
+   sBuffer += "\n"+id;
+   
    return true;
 }
 
-bool GCFS_ControlStatus::write(GCFS_Task* pTask, const char * sValue)
+ssize_t GCFS_ControlStatus::write(const char* sBuffer, off_t uiOffset, size_t uiSize)
 {
-   return false;
+   return 0;
 }
 
-GCFS_ControlControl::GCFS_ControlControl(): GCFS_Control("control")
+/***************************************************************************/
+GCFS_ControlControl::GCFS_ControlControl(GCFS_Task* pTask): GCFS_Control(pTask)
 {
    m_vCommands.push_back("start");
    m_vCommands.push_back("start_and_wait");
@@ -53,76 +64,80 @@ GCFS_ControlControl::GCFS_ControlControl(): GCFS_Control("control")
    m_vCommands.push_back("suspend");
 }
 
-bool GCFS_ControlControl::read(GCFS_Task* pTask, std::string &buff)
+ssize_t GCFS_ControlControl::read(std::string sBuffer, off_t uiOffset, size_t uiSize)
 {
    for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
    {
       if (iIndex > 0)
-         buff += ", ";
-
-      buff += m_vCommands[iIndex];
+         sBuffer += ", ";
+      
+      sBuffer += m_vCommands[iIndex];
    }
-
-   return true;
+   
+   return sBuffer.size();
 }
 
-bool GCFS_ControlControl::write(GCFS_Task* pTask, const char * sValue)
+ssize_t GCFS_ControlControl::write(const char* sBuffer, off_t uiOffset, size_t uiSize)
 {
-   std::string value = trimStr(sValue);
-
-   GCFS_ConfigValue::keyValueArray_t vValues;
+   GCFS_Task* pTask = getParentTask();
    
-   if(!GCFS_ConfigValue::ParseConfigString((char*)value.c_str(), vValues))
+   if(!pTask)
+      return 0;
+   
+   std::string value = GCFS_Utils::TrimStr(sBuffer);
+   
+   GCFS_Utils::keyValueArray_t vValues;
+   
+   if(!GCFS_Utils::ParseConfigString((char*)value.c_str(), vValues))
       return false;
-
+   
    // Check if commands/assignments exists
-   for(GCFS_ConfigValue::keyValueArray_t::iterator it = vValues.begin(); it != vValues.end(); it++)
-   {
-      if(it->second)
+      for(GCFS_Utils::keyValueArray_t::iterator it = vValues.begin(); it != vValues.end(); it++)
       {
-         // It is assignment
-         if(pTask->getConfigValue(it->first) == NULL)
-            return false;
-      }
-      else
-      {
-         bool bFound = false;
-         for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
-            if (strcasecmp(m_vCommands[iIndex], it->first) == 0)
-            {
-               bFound = true;
-               continue;
-            }
-
-         if(!bFound)
-            return false;
-      }
-   }
-
-   // Execute commands/assignments
-   for(GCFS_ConfigValue::keyValueArray_t::iterator it = vValues.begin(); it != vValues.end(); it++)
-   {
-      if(it->second)
-      {
-         // It is assignment
-         pTask->getConfigValue(it->first)->SetValue(it->second);
-      }
-      else
-      {
-         for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
-            if (strcasecmp(m_vCommands[iIndex], it->first) == 0)
-               if(!executeCommand(pTask, iIndex))
+         if(it->second)
+         {
+            // It is assignment
+            if(pTask->getConfigValue(it->first) == NULL)
+               return false;
+         }
+         else
+         {
+            bool bFound = false;
+            for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
+               if (strcasecmp(m_vCommands[iIndex], it->first) == 0)
+               {
+                  bFound = true;
+                  continue;
+               }
+               
+               if(!bFound)
                   return false;
+         }
       }
-   }
-
-   return true;
+      
+      // Execute commands/assignments
+      for(GCFS_Utils::keyValueArray_t::iterator it = vValues.begin(); it != vValues.end(); it++)
+      {
+         if(it->second)
+         {
+            // It is assignment
+            pTask->getConfigValue(it->first)->SetValue(it->second);
+         }
+         else
+         {
+            for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
+               if (strcasecmp(m_vCommands[iIndex], it->first) == 0)
+                  if(!executeCommand(pTask, iIndex))
+                     return false;
+         }
+      }
+      
+      return true;
 }
 
 bool GCFS_ControlControl::executeCommand(GCFS_Task* pTask, int iCommandIndex)
 {
-   
-   GCFS_Service * pService = g_sConfig.GetService(pTask->m_iService.m_iValue);
+   GCFS_Service * pService = g_sConfig.GetService(pTask->m_sConfigDirectory.m_iService.m_iValue);
    
    //Do propper action
    switch (iCommandIndex)
@@ -140,7 +155,7 @@ bool GCFS_ControlControl::executeCommand(GCFS_Task* pTask, int iCommandIndex)
       }
       case eStartAndWait:
       {
-         if (this->write(pTask, "start"))
+         if (this->write("start", 0, 6))
          {
             return pService->waitForTask(pTask);
          }

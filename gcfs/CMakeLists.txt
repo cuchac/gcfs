@@ -31,7 +31,7 @@ set(CMAKE_CXX_FLAGS "-pedantic -Wall -std=c++98")
 set(CMAKE_C_FLAGS "-pedantic -Wall -std=c89")
 
 # Create main executable
-ADD_EXECUTABLE(gcfs src/gcfs_utils.cpp src/gcfs_controls.cpp src/gcfs_task.cpp src/gcfs_service.cpp src/gcfs_config.cpp src/gcfs_fuse.cpp src/gcfs.cpp src/gcfs_config_values.cpp)
+ADD_EXECUTABLE(gcfs src/gcfs_filesystem.cpp src/gcfs_utils.cpp src/gcfs_controls.cpp src/gcfs_task.cpp src/gcfs_service.cpp src/gcfs_config.cpp src/gcfs_fuse.cpp src/gcfs.cpp src/gcfs_config_values.cpp)
 
 # Add modules
 add_subdirectory(lib)

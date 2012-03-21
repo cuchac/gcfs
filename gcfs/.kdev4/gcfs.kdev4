@@ -16,7 +16,7 @@ Launch Configurations=Launch Configuration 0
 [Launch][Launch Configuration 0]
 Configured Launch Modes=execute
 Configured Launchers=nativeAppLauncher
-Name=New Native Application Configuration
+Name=gcfs
 Type=Native Application
 
 [Launch][Launch Configuration 0][Data]
@@ -30,16 +30,17 @@ EnvironmentGroup=default
 Executable=file:///root/workspace/skola/erasmus/project/git/gcfs/build/gcfs
 External Terminal=konsole --noclose --workdir %workdir -e %exe
 GDB Path=
-Project Target=
+Project Target=gcfs,gcfs
 Remote GDB Config Script=
 Remote GDB Run Script=
 Remote GDB Shell Script=
 Try Setting Breakpoints On Loading Libraries=true
 Use External Terminal=false
 Working Directory=file:///root/workspace/skola/erasmus/project/git/gcfs/build/
-isExecutable=true
+isExecutable=false
 
 [MakeBuilder]
+Default Make Environment Profile=0
 Number Of Jobs=1
 
 [Project]
