@@ -68,7 +68,7 @@ GCFS_Directory* GCFS_RootDirectory::mkdir(const char* sName, GCFS_Permissions* p
 
 /***************************************************************************/
 GCFS_Task::GCFS_Task(GCFS_Directory * pParent): 
-   GCFS_Directory(pParent),
+   GCFS_RootDirectory(pParent),
    m_eStatus(eNew),
    m_pServiceData(NULL),
    m_sPermissions(),

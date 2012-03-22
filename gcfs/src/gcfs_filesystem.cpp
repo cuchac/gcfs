@@ -262,12 +262,15 @@ ssize_t GCFS_File::read(std::string& sBuffer, off_t uiOffset, size_t uiSize)
 {
    sBuffer.reserve(uiSize);
    
+   if(uiOffset >= 0)
+      lseek(m_hFile, uiOffset, SEEK_SET);
+   
    return ::read(m_hFile, (void*)sBuffer.c_str(), uiSize);
 }
 
 ssize_t GCFS_File::write(const char* sBuffer, off_t uiOffset, size_t uiSize)
 {
-   if(uiOffset > 0)
+   if(uiOffset >= 0)
       lseek(m_hFile, uiOffset, SEEK_SET);
    
    return ::write(m_hFile, sBuffer, uiSize);

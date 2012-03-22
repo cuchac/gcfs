@@ -39,7 +39,7 @@ bool GCFS_ServiceSaga::configure(CSimpleIniA& pConfig)
 
 bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 {
-	std::string sSubmitDir = g_sConfig.m_sDataDir+pTask->m_sName+"/";
+	std::string sSubmitDir = getSubmitDir(pTask);
 	mkdir(sSubmitDir.c_str(), 0777);
 	
 	// Allow world to write into submission dir - security suicide but necessary for non-root Condor
@@ -210,7 +210,7 @@ bool GCFS_ServiceSaga::abortTask(GCFS_Task* pTask)
 
 		delete (SagaTaskData*)pTask->m_pServiceData;
 
-		std::string sSubmitDir = g_sConfig.m_sDataDir+pTask->m_sName+"/";
+      std::string sSubmitDir = getSubmitDir(pTask);
 
 		// Get rid of submit directory
 		GCFS_Utils::rmdirRecursive(sSubmitDir.c_str());
@@ -250,7 +250,7 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 {
 	printf("Finishing task!!!!\n");
 	
-	std::string sSubmitDir = g_sConfig.m_sDataDir+pTask->m_sName+"/";
+   std::string sSubmitDir = getSubmitDir(pTask);
 
 	delete (SagaTaskData*)pTask->m_pServiceData;
 	pTask->m_pServiceData = 0;
@@ -299,4 +299,11 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 	rmdir(sSubmitDir.c_str());
 
 	return true;
+}
+
+const std::string GCFS_ServiceSaga::getSubmitDir(GCFS_Task* pTask)
+{
+   std::ostringstream os;
+   os << g_sConfig.m_sDataDir << pTask->getInode() << "/";
+   return os.str();
 }

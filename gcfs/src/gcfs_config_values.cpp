@@ -26,12 +26,12 @@ ssize_t GCFS_ConfigValue::read(std::string &sBuffer, off_t uiOffset, size_t uiSi
    sBuffer += "\n";
    return max(0, sBuffer.size() - uiOffset);
 }
+
 ssize_t GCFS_ConfigValue::write(const char* sBuffer, off_t uiOffset, size_t uiSize)
 {
-   SetValue(sBuffer, uiOffset);
+   SetValue(std::string(sBuffer, uiSize).c_str(), uiOffset);
    return uiSize;
 }
-
 
 /***************************************************************************/
 GCFS_ConfigInt::GCFS_ConfigInt(GCFS_Directory * pParent, const char *sDefault) :GCFS_ConfigValue(pParent) 

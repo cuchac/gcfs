@@ -258,7 +258,10 @@ static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t s
 
       size = pFile->write(buf, off, size);
       
-      fuse_reply_write(req, size);
+      if(size)
+         fuse_reply_write(req, size);
+      else
+         fuse_reply_err(req, EIO);
    }
    else
    {

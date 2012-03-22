@@ -42,7 +42,7 @@ public:
 };
 
 // Task Configuration
-class GCFS_Task : public GCFS_Directory 
+class GCFS_Task : public GCFS_RootDirectory 
 {
     
 public:
@@ -67,7 +67,6 @@ public:
    bool                                isSubmited();
 
 public:
-   std::string                         m_sName;
    Status                              m_eStatus;
    void*                               m_pServiceData; // Data space for service
    GCFS_Permissions                    m_sPermissions;

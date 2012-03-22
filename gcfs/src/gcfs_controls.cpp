@@ -86,7 +86,7 @@ ssize_t GCFS_ControlControl::write(const char* sBuffer, off_t uiOffset, size_t u
    if(!pTask)
       return 0;
    
-   std::string value = GCFS_Utils::TrimStr(sBuffer);
+   std::string value = GCFS_Utils::TrimStr(std::string(sBuffer, uiSize));
    
    GCFS_Utils::keyValueArray_t vValues;
    
@@ -94,47 +94,47 @@ ssize_t GCFS_ControlControl::write(const char* sBuffer, off_t uiOffset, size_t u
       return false;
    
    // Check if commands/assignments exists
-      for(GCFS_Utils::keyValueArray_t::iterator it = vValues.begin(); it != vValues.end(); it++)
+   for(GCFS_Utils::keyValueArray_t::iterator it = vValues.begin(); it != vValues.end(); it++)
+   {
+      if(it->second)
       {
-         if(it->second)
-         {
-            // It is assignment
-            if(pTask->getConfigValue(it->first) == NULL)
+         // It is assignment
+         if(pTask->getConfigValue(it->first) == NULL)
+            return false;
+      }
+      else
+      {
+         bool bFound = false;
+         for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
+            if (strcasecmp(m_vCommands[iIndex], it->first) == 0)
+            {
+               bFound = true;
+               continue;
+            }
+            
+            if(!bFound)
                return false;
-         }
-         else
-         {
-            bool bFound = false;
-            for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
-               if (strcasecmp(m_vCommands[iIndex], it->first) == 0)
-               {
-                  bFound = true;
-                  continue;
-               }
-               
-               if(!bFound)
-                  return false;
-         }
       }
-      
-      // Execute commands/assignments
-      for(GCFS_Utils::keyValueArray_t::iterator it = vValues.begin(); it != vValues.end(); it++)
+   }
+   
+   // Execute commands/assignments
+   for(GCFS_Utils::keyValueArray_t::iterator it = vValues.begin(); it != vValues.end(); it++)
+   {
+      if(it->second)
       {
-         if(it->second)
-         {
-            // It is assignment
-            pTask->getConfigValue(it->first)->SetValue(it->second);
-         }
-         else
-         {
-            for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
-               if (strcasecmp(m_vCommands[iIndex], it->first) == 0)
-                  if(!executeCommand(pTask, iIndex))
-                     return false;
-         }
+         // It is assignment
+         pTask->getConfigValue(it->first)->SetValue(it->second);
       }
-      
-      return true;
+      else
+      {
+         for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
+            if (strcasecmp(m_vCommands[iIndex], it->first) == 0)
+               if(!executeCommand(pTask, iIndex))
+                  return false;
+      }
+   }
+   
+   return max(0, uiSize - uiOffset);
 }
 
 bool GCFS_ControlControl::executeCommand(GCFS_Task* pTask, int iCommandIndex)

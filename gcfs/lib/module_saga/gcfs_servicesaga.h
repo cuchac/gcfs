@@ -27,6 +27,7 @@ public:
    
 public:
 	bool							finishTask(GCFS_Task* pTask, const char* sMessage = NULL);
+   const std::string getSubmitDir(GCFS_Task* pTask);
 
 // Config values
 private:
