@@ -30,7 +30,7 @@ GCFS_ControlStatus::GCFS_ControlStatus(GCFS_Task* pTask): GCFS_Control(pTask)
    
 }
 
-ssize_t GCFS_ControlStatus::read(std::string sBuffer, off_t uiOffset, size_t uiSize)
+ssize_t GCFS_ControlStatus::read(std::string &sBuffer, off_t uiOffset, size_t uiSize)
 {
    GCFS_Task* pTask = getParentTask();
    if(!pTask)
@@ -46,7 +46,8 @@ ssize_t GCFS_ControlStatus::read(std::string sBuffer, off_t uiOffset, size_t uiS
    sBuffer = cbuff;
    sBuffer += "\n"+id;
    
-   return true;
+   sBuffer += "\n";
+   return max(0, sBuffer.size() - uiOffset);
 }
 
 ssize_t GCFS_ControlStatus::write(const char* sBuffer, off_t uiOffset, size_t uiSize)
@@ -64,7 +65,7 @@ GCFS_ControlControl::GCFS_ControlControl(GCFS_Task* pTask): GCFS_Control(pTask)
    m_vCommands.push_back("suspend");
 }
 
-ssize_t GCFS_ControlControl::read(std::string sBuffer, off_t uiOffset, size_t uiSize)
+ssize_t GCFS_ControlControl::read(std::string &sBuffer, off_t uiOffset, size_t uiSize)
 {
    for (uint iIndex = 0; iIndex < m_vCommands.size(); iIndex ++)
    {
@@ -74,7 +75,8 @@ ssize_t GCFS_ControlControl::read(std::string sBuffer, off_t uiOffset, size_t ui
       sBuffer += m_vCommands[iIndex];
    }
    
-   return sBuffer.size();
+   sBuffer += "\n";
+   return max(0, sBuffer.size() - uiOffset);
 }
 
 ssize_t GCFS_ControlControl::write(const char* sBuffer, off_t uiOffset, size_t uiSize)

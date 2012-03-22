@@ -7,6 +7,9 @@
 
 #define ARRAYSIZE(a) (sizeof(a)/sizeof((a)[0]))
 
+#define min(x, y) ((x) < (y) ? (x) : (y))
+#define max(x, y) ((x) > (y) ? (x) : (y))
+
 // Characters to trim from configuration names and values
 #define GCFS_CONFIG_TRIMCHARS " \r\n"
 // Delimiters of configuration values

@@ -82,6 +82,10 @@ GCFS_Task::GCFS_Task(GCFS_Directory * pParent):
    addChild(&m_sControl, "control");
    //addChild(&m_sControl, "executable");
    addChild(&m_sStatus, "status");
+   
+   addChild(&m_sConfigDirectory, "config");
+   addChild(&m_sDataDir, "data");
+   addChild(&m_sResultDir, "result");
 }
 
 GCFS_Task::~GCFS_Task()
@@ -92,8 +96,12 @@ GCFS_Task::~GCFS_Task()
       pService->deleteTask(this);
    
    removeChild( "control", false);
-   //removeChild("executable");
+   //removeChild("executable", false);
    removeChild("status", false);
+   
+   removeChild("config", false);
+   removeChild("data", false);
+   removeChild("result", false);
 }
 
 GCFS_FileSystem::EType GCFS_Task::getType()
@@ -213,7 +221,7 @@ GCFS_TaskManager::~GCFS_TaskManager()
 
 void GCFS_TaskManager::Init()
 {
-   m_pRootDirectory = new GCFS_Directory(NULL);
+   m_pRootDirectory = new GCFS_RootDirectory(NULL);
 }
 
 

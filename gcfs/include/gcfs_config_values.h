@@ -18,6 +18,10 @@ public:
    virtual                ~GCFS_ConfigValue();
 
 public:
+    virtual ssize_t        read(std::string& sBuffer, off_t uiOffset, size_t uiSize);
+    virtual ssize_t        write(const char* sBuffer, off_t uiOffset, size_t uiSize);
+    
+public:
    virtual  bool           SetValue(const char * sValue, size_t iOffset = 0) = 0;
    virtual  bool           PrintValue(std::string &buff) = 0;
 

@@ -21,7 +21,7 @@ public:
                         GCFS_ControlStatus(GCFS_Task * pTask);
 
 public:
-   virtual ssize_t      read(std::string sBuffer, off_t uiOffset, size_t uiSize);
+   virtual ssize_t      read(std::string& sBuffer, off_t uiOffset, size_t uiSize);
    virtual ssize_t      write(const char * sBuffer, off_t uiOffset, size_t uiSize);
 
 private:
@@ -50,7 +50,7 @@ private:
    };
 
 public:
-   virtual ssize_t      read(std::string sBuffer, off_t uiOffset, size_t uiSize);
+   virtual ssize_t      read(std::string& sBuffer, off_t uiOffset, size_t uiSize);
    virtual ssize_t      write(const char * sBuffer, off_t uiOffset, size_t uiSize);
 };
 

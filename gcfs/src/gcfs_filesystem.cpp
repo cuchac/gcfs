@@ -26,7 +26,7 @@ GCFS_FileSystem::EType GCFS_FileSystem::getType()
    return eTypeVirtualFile;
 }
 
-ssize_t GCFS_FileSystem::read(std::string sBuffer, off_t uiOffset, size_t uiSize)
+ssize_t GCFS_FileSystem::read(std::string& sBuffer, off_t uiOffset, size_t uiSize)
 {
    printf("Unimplemented read!");
    return false;
@@ -40,13 +40,12 @@ ssize_t GCFS_FileSystem::write(const char* sBuffer, off_t uiOffset, size_t uiSiz
 
 bool GCFS_FileSystem::close()
 {
-   printf("Unimplemented close!");
-   return false;
+   return true;
 }
 
 int GCFS_FileSystem::open()
 {
-   return false;
+   return true;
 }
 
 GCFS_FileSystem* GCFS_FileSystem::create(const char* sName, GCFS_FileSystem::EType eType)
@@ -202,8 +201,14 @@ GCFS_FileSystem* GCFS_Directory::create(const char* sName, GCFS_FileSystem::ETyp
       char buff[32];
       snprintf(buff, sizeof(buff), "%x", iInode);
       
+      // COntruct path
       std::string sPath = g_sConfig.m_sDataDir + "/" + buff;
       pFile->setPath(sPath.c_str());
+      
+      // Ensure no old file exists
+      unlink(sPath.c_str());
+      
+      pFile->open();
       
       chown(sPath.c_str(), getPermissions()->m_iUid, getPermissions()->m_iGid);
       
@@ -253,7 +258,7 @@ GCFS_FileSystem::EType GCFS_File::getType()
    return eTypePhysicalFile;
 }
 
-ssize_t GCFS_File::read(std::string sBuffer, off_t uiOffset, size_t uiSize)
+ssize_t GCFS_File::read(std::string& sBuffer, off_t uiOffset, size_t uiSize)
 {
    sBuffer.reserve(uiSize);
    

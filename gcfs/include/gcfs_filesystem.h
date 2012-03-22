@@ -33,7 +33,7 @@ public:
    
 public:
    // Low level filesystem calls
-   virtual ssize_t            read(std::string sBuffer, off_t uiOffset, size_t uiSize);
+   virtual ssize_t            read(std::string &sBuffer, off_t uiOffset, size_t uiSize);
    virtual ssize_t            write(const char * sBuffer, off_t uiOffset, size_t uiSize);
    virtual int                open();
    virtual GCFS_FileSystem*   create(const char * sName, EType eType);
@@ -103,7 +103,7 @@ public:
    virtual EType              getType();
    
 public:
-   virtual ssize_t            read(std::string sBuffer, off_t uiOffset, size_t uiSize);
+   virtual ssize_t            read(std::string &sBuffer, off_t uiOffset, size_t uiSize);
    virtual ssize_t            write(const char * sBuffer, off_t uiOffset, size_t uiSize);
    virtual off_t              getSize();
    virtual int                open();

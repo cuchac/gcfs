@@ -11,6 +11,7 @@
 
 #include <fuse.h>
 #include <fuse_lowlevel.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,12 +19,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <assert.h>
+#include <time.h>
+
 #include <gcfs.h>
 #include <gcfs_fuse.h>
 #include <gcfs_task.h>
 #include <gcfs_config.h>
-#include <time.h>
 #include <gcfs_controls.h>
+#include <gcfs_utils.h>
 
 static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
 {
@@ -155,8 +158,6 @@ static void dirbuf_add(fuse_req_t req, std::string &buff , const char *name, fus
    fuse_add_direntry(req, (char*)buff.c_str() + bufSize, size, name, &stbuf, bufSize+size);
 
 }
-
-#define min(x, y) ((x) < (y) ? (x) : (y))
 
 static int reply_buf_limited(fuse_req_t req, std::string &buff, size_t off, size_t maxsize)
 {
