@@ -3,97 +3,118 @@
 #include "config.h"
 
 #ifdef GCFS_MODULE_CONDOR
-	#include "lib/module_condor/gcfs_servicecondor.h"
+   #include "lib/module_condor/gcfs_servicecondor.h"
 #endif
 #ifdef GCFS_MODULE_SAGA
-	#include "lib/module_saga/gcfs_servicesaga.h"
+   #include "lib/module_saga/gcfs_servicesaga.h"
 #endif
 
 #include <string.h>
 #include <stdio.h>
 
+GCFS_Service::GCFS_Service(const char* sName):
+   m_sName(sName),
+   m_sDefaultValues(NULL)
+{
+   
+}
+GCFS_Service::~GCFS_Service()
+{
+   
+}
+
 bool GCFS_Service::configure(CSimpleIniA& pConfig)
 {
-	// Do default config loading
+   // Do default config loading
 
-	// Load defaul parameters
-	CSimpleIniA::TKeyVal::const_iterator it;
-	const CSimpleIniA::TKeyVal* pSection = pConfig.GetSection((m_sName+".default").c_str());
-	if(pSection)
-		for(it = pSection->begin(); it != pSection->end(); it++)
-			m_mDefaults[it->first.pItem] = it->second;
+   // Load defaul parameters
+   CSimpleIniA::TKeyVal::const_iterator it;
+   const CSimpleIniA::TKeyVal* pSection = pConfig.GetSection((m_sName+".default").c_str());
+   if(pSection)
+      for(it = pSection->begin(); it != pSection->end(); it++)
+      {
+         GCFS_ConfigValue* pConfigValue = m_sDefaultValues.getConfigValue(it->first.pItem);
+         if(pConfigValue)
+            pConfigValue->SetValue(it->second, 0);
+      }
 
-	pSection = pConfig.GetSection((m_sName+".environment").c_str());
-	if(pSection)
-		for(it = pSection->begin(); it != pSection->end(); it++)
-			m_mEnvironment[it->first.pItem] = it->second;
+   pSection = pConfig.GetSection((m_sName+".environment").c_str());
+   GCFS_ConfigValue* pConfigValue = m_sDefaultValues.getConfigValue("environment");
+   if(pSection && pConfigValue)
+   {
+      std::string sValue;
+      for(it = pSection->begin(); it != pSection->end(); it++)
+         sValue += std::string(it->first.pItem) + "=" + it->second + ";";
+      pConfigValue->SetValue(sValue.c_str(), 0);
+   }
 
-	return true;
+   return true;
 }
 
 bool GCFS_Service::customizeTask(GCFS_Task* pTask)
 {
-   const GCFS_FileSystem::FileList* mConfigValues = pTask->getConfigValues();
-   GCFS_FileSystem::FileList::const_iterator itConfig;
-	std::map<std::string, std::string >::iterator itDefault;
-   for(itConfig = mConfigValues->begin(); itConfig != mConfigValues->end(); itConfig++)
+   const GCFS_FileSystem::FileList* mDefaultValues = m_sDefaultValues.getConfigValues();
+   GCFS_FileSystem::FileList::const_iterator itDefault;
+   GCFS_ConfigValue* pConfigValue;
+   for(itDefault = mDefaultValues->begin(); itDefault != mDefaultValues->end(); itDefault++)
    {
-      if((itDefault = m_mDefaults.find(itConfig->first)) != m_mDefaults.end())
-         itConfig->second->write(itDefault->second.c_str(), 0, itDefault->second.length());
+      if((pConfigValue = pTask->getConfigValue(itDefault->first.c_str())) != NULL)
+      {
+         std::string sValue;
+         itDefault->second->read(sValue, 0, 0);
+         pConfigValue->SetValue(sValue.c_str());
+      }
    }
-
-	for(itDefault = m_mEnvironment.begin(); itDefault != m_mEnvironment.end(); itDefault++)
-		pTask->m_sConfigDirectory.m_sEnvironment.SetValue(itDefault->first.c_str(), itDefault->second.c_str());
-
-	return true;
+   
+   return true;
 }
 
 
 GCFS_Service*	GCFS_Service::createService(const char * sModule, const char * sName)
 {
-	
+
 #ifdef GCFS_MODULE_CONDOR
-	if(strcasecmp(sModule, "condor") == 0)
-		return new GCFS_ServiceCondor(sName);
+   if(strcasecmp(sModule, "condor") == 0)
+      return new GCFS_ServiceCondor(sName);
 #endif
 
 #ifdef GCFS_MODULE_SAGA
-	if(strcasecmp(sModule, "saga") == 0)
-		return new GCFS_ServiceSaga(sName);
+   if(strcasecmp(sModule, "saga") == 0)
+      return new GCFS_ServiceSaga(sName);
 #endif
-		
-	printf("Error! Unknown service driver: %s\n", sModule);
-	return NULL;
+
+   printf("Error! Unknown service driver: %s\n", sModule);
+   return NULL;
 
 }
 
 bool GCFS_Service::submitTask(GCFS_Task* pTask)
 {
-	pTask->m_eStatus = GCFS_Task::eRunning;
-	
-	return true;
+   pTask->m_eStatus = GCFS_Task::eRunning;
+
+   return true;
 }
 
 bool GCFS_Service::waitForTask(GCFS_Task* pTask)
 {
-	pTask->m_eStatus = GCFS_Task::eFinished;
+   pTask->m_eStatus = GCFS_Task::eFinished;
 
-	return true;
+   return true;
 }
 
 bool GCFS_Service::abortTask(GCFS_Task* pTask)
 {
-	pTask->m_eStatus = GCFS_Task::eAborted;
+   pTask->m_eStatus = GCFS_Task::eAborted;
 
-	return true;
+   return true;
 }
 
 bool GCFS_Service::deleteTask(GCFS_Task* pTask)
 {
-	return true;
+   return true;
 }
 
 GCFS_Task::Status	GCFS_Service::getTaskStatus(GCFS_Task* pTask)
 {
-	return pTask->m_eStatus;
+   return pTask->m_eStatus;
 }
