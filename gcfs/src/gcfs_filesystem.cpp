@@ -8,17 +8,20 @@
 #include "gcfs_config.h"
 #include "gcfs_task.h"
 
+// RootDir has inode=1 and is allocated first 
 ino_t GCFS_FileSystem::s_uiFirstAvailableInode = 1;
 GCFS_FileSystem::InodeList GCFS_FileSystem::s_mInodes;
 
 GCFS_FileSystem::GCFS_FileSystem(GCFS_Directory * pParent):m_pParent(pParent)
 {
-   allocInode();
+   if(getParentTask())
+      allocInode();
 }
 
 GCFS_FileSystem::~GCFS_FileSystem()
 {
-   releaseInode();
+   if(getParentTask())
+      releaseInode();
 }
 
 GCFS_FileSystem::EType GCFS_FileSystem::getType()
@@ -69,12 +72,13 @@ off_t GCFS_FileSystem::getSize()
    return 0;
 }
 
-GCFS_Permissions* GCFS_FileSystem::getPermissions()
+bool GCFS_FileSystem::getPermissions(GCFS_Permissions& sPermissions)
 {
    if(m_pParent)
-      return m_pParent->getPermissions();
-   else
-      return &g_sConfig.m_sPermissions;
+      return m_pParent->getPermissions(sPermissions);
+
+   sPermissions = g_sConfig.m_sPermissions;
+   return true;
 }
 
 const GCFS_FileSystem::FileList* GCFS_FileSystem::getChildren()
@@ -91,7 +95,7 @@ GCFS_Task* GCFS_FileSystem::getParentTask()
 {
    GCFS_Directory * pParent = m_pParent;
    
-   while(pParent && !pParent->getType() == eTypeTask)
+   while(pParent && pParent->getType() != eTypeTask)
       pParent = pParent->getParent();
    
    return (GCFS_Task *)pParent;
@@ -100,6 +104,21 @@ GCFS_Task* GCFS_FileSystem::getParentTask()
 GCFS_Directory* GCFS_FileSystem::getParent()
 {
    return m_pParent;
+}
+
+const char* GCFS_FileSystem::getName()
+{
+   GCFS_Directory * pParent;
+   if((pParent = getParent()) != NULL)
+   {
+      const FileList* pFiles = pParent->getChildren();
+      FileList::const_iterator it;
+      for(it = pFiles->begin(); it != pFiles->end(); it++)
+         if(it->second == this)
+            return it->first.c_str();
+   }
+   
+   return NULL;
 }
 
 ino_t GCFS_FileSystem::getInode() const
@@ -209,8 +228,11 @@ GCFS_FileSystem* GCFS_Directory::create(const char* sName, GCFS_FileSystem::ETyp
       unlink(sPath.c_str());
       
       pFile->open();
+
+      GCFS_Permissions sPermissions;
+      getPermissions(sPermissions);
       
-      chown(sPath.c_str(), getPermissions()->m_iUid, getPermissions()->m_iGid);
+      chown(sPath.c_str(), sPermissions.m_iUid, sPermissions.m_iGid);
       
       addChild(pFile, sName);
       

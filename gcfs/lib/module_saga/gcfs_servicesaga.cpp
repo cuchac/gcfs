@@ -45,12 +45,16 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	// Allow world to write into submission dir - security suicide but necessary for non-root Condor
 	chmod(sSubmitDir.c_str(), 0777);
 
+   std::string sExecutableName = basename((char*)((std::string)pTask->m_sConfigDirectory.m_sExecutable).c_str());
+   std::string sExecutable = sSubmitDir + sExecutableName.c_str();
+   
 	//Link executable into submit directory
 	GCFS_File* pExecutableFile = pTask->getExecutableFile();
-	std::string sExecutable = sSubmitDir+basename((char*)pTask->m_sConfigDirectory.m_sExecutable.m_sValue.c_str());
+   
 	link(pExecutableFile->getPath(), sExecutable.c_str());
 	chmod(sExecutable.c_str(), 0777);
-	pExecutableFile->close();
+
+   pExecutableFile->close();
 
 	// Fill-in executable parameters - parse arguments string into parameters
 	std::vector <std::string> vArguments;
@@ -60,12 +64,13 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	for (uint iIndex = 0; iIndex < sArguments.we_wordc; iIndex++)
 		vArguments.push_back(sArguments.we_wordv[iIndex]);
 	wordfree(&sArguments);*/
-   vArguments.push_back(pTask->m_sConfigDirectory.m_sArguments.m_sValue);
+   vArguments.push_back(pTask->m_sConfigDirectory.m_sArguments);
 
 	// Fill-in executable environment
 	std::vector <std::string> vEnvironment;
 	GCFS_ConfigEnvironment::values_t::iterator it;
-   for(it = pTask->m_sConfigDirectory.m_sEnvironment.m_mValues.begin(); it != pTask->m_sConfigDirectory.m_sEnvironment.m_mValues.end(); it++)
+   GCFS_ConfigEnvironment::values_t &mEnvValues = (GCFS_ConfigEnvironment::values_t&)pTask->m_sConfigDirectory.m_sEnvironment;
+   for(it = mEnvValues.begin(); it != mEnvValues.end(); it++)
 		vEnvironment.push_back(it->first+"="+it->second);
 	
 	// Fill data files to send
@@ -73,7 +78,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	const GCFS_FileSystem::FileList* vTaskDataFiles = pTask->getDataFiles();
    for(GCFS_FileSystem::FileList::const_iterator it = vTaskDataFiles->begin(); it != vTaskDataFiles->end(); it++)
 	{
-      if(it->first != basename((char*)pTask->m_sConfigDirectory.m_sExecutable.m_sValue.c_str())) // Ececutable is transferet automagically
+      if(it->first != sExecutableName) // Ececutable is transferet automagically
 		{
 			// Hard-Link the file to subit directory and add to files to transfer
 			std::string linkTarget = sSubmitDir+it->first;
@@ -83,9 +88,9 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 		}
 	}
 
-	// Print number of processes to temporary buffer
-	char sProcesses[32] = {};
-   snprintf(sProcesses, ARRAYSIZE(sProcesses), "%d", (int)pTask->m_sConfigDirectory.m_iProcesses);
+	// Get number of processes as string
+	std::string sProcesses;
+   pTask->m_sConfigDirectory.m_iProcesses.PrintValue(sProcesses);
 
 	saga::job::description sJobDescription;
 	
@@ -95,7 +100,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 		sJobDescription.set_attribute(sja::description_executable, sExecutable);
       sJobDescription.set_attribute(sja::description_error, pTask->m_sConfigDirectory.m_sError);
       sJobDescription.set_attribute(sja::description_output, pTask->m_sConfigDirectory.m_sOutput);
-      if(!pTask->m_sConfigDirectory.m_sInput.m_sValue.empty())
+      if(!((std::string)pTask->m_sConfigDirectory.m_sInput).empty())
          sJobDescription.set_attribute(sja::description_input, pTask->m_sConfigDirectory.m_sInput);
 		sJobDescription.set_attribute(sja::description_number_of_processes, sProcesses);
 
@@ -275,7 +280,7 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 	}
 
 	// Remove executable from submitdir to prevent copying to result dir
-	std::string sExecutable = sSubmitDir+basename((char*)pTask->m_sConfigDirectory.m_sExecutable.m_sValue.c_str());
+	std::string sExecutable = sSubmitDir+basename((char*)((std::string)pTask->m_sConfigDirectory.m_sExecutable).c_str());
 	unlink(sExecutable.c_str());
 
 	DIR* pDir = opendir(sSubmitDir.c_str());

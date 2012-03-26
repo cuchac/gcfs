@@ -40,7 +40,6 @@ Working Directory=file:///root/workspace/skola/erasmus/project/git/gcfs/build/
 isExecutable=false
 
 [MakeBuilder]
-Default Make Environment Profile=0
 Number Of Jobs=1
 
 [Project]

@@ -42,20 +42,21 @@ public:
    virtual GCFS_Directory*    mkdir(const char *name, GCFS_Permissions* pPerm);
    
    virtual off_t              getSize();
-   virtual GCFS_Permissions*  getPermissions();
+   virtual bool               getPermissions(GCFS_Permissions &sPermissions);
    virtual const FileList*    getChildren();
    virtual const GCFS_FileSystem*    getChild(const char * sName);
    
 public:
    virtual GCFS_Task*         getParentTask();
    virtual GCFS_Directory*    getParent();
+   virtual const char*        getName();
    virtual ino_t              getInode() const;
    
 // Inode allocation and management
 public:
    static GCFS_FileSystem*    getInodeFile(ino_t iInode);
    
-private:
+protected:
    ino_t                      allocInode();
    bool                       releaseInode();
    

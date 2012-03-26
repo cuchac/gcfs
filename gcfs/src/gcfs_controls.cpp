@@ -36,7 +36,7 @@ ssize_t GCFS_ControlStatus::read(std::string &sBuffer, off_t uiOffset, size_t ui
    if(!pTask)
       return 0;
    
-   GCFS_Service* pService = g_sConfig.GetService(pTask->m_sConfigDirectory.m_iService.m_iValue);
+   GCFS_Service* pService = g_sConfig.GetService(pTask->m_sConfigDirectory.m_iService);
    int status = (int)pService->getTaskStatus(pTask);
    const std::string id = pService->getTaskId(pTask);
    
@@ -139,7 +139,7 @@ ssize_t GCFS_ControlControl::write(const char* sBuffer, off_t uiOffset, size_t u
 
 bool GCFS_ControlControl::executeCommand(GCFS_Task* pTask, int iCommandIndex)
 {
-   GCFS_Service * pService = g_sConfig.GetService(pTask->m_sConfigDirectory.m_iService.m_iValue);
+   GCFS_Service * pService = g_sConfig.GetService(pTask->m_sConfigDirectory.m_iService);
    
    //Do propper action
    switch (iCommandIndex)

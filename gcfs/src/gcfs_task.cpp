@@ -11,16 +11,16 @@
 
 GCFS_ConfigDirectory::GCFS_ConfigDirectory(GCFS_Task* pTask):
    GCFS_Directory(pTask),
-   m_iMemory(pTask, "1024"),
-   m_iProcesses(pTask, "1"),
-   m_iTimeout(pTask, "3600"),
-   m_iService(pTask, NULL, &g_sConfig.m_vServiceNames),
-   m_sExecutable(pTask, "./data/executable"),
-   m_sInput(pTask, ""),
-   m_sOutput(pTask, "output"),
-   m_sError(pTask, "error"),
-   m_sArguments(pTask, ""),
-   m_sEnvironment(pTask)
+   m_iMemory(this, "1024"),
+   m_iProcesses(this, "1"),
+   m_iTimeout(this, "3600"),
+   m_iService(this, NULL, &g_sConfig.m_vServiceNames),
+   m_sExecutable(this, "./data/executable"),
+   m_sInput(this, ""),
+   m_sOutput(this, "output"),
+   m_sError(this, "error"),
+   m_sArguments(this, ""),
+   m_sEnvironment(this)
 {
    addChild(&m_iMemory, "memory");
    addChild(&m_iProcesses, "processes");
@@ -51,11 +51,22 @@ GCFS_ConfigDirectory::~GCFS_ConfigDirectory()
    removeChild("environment", false);
 }
 
+GCFS_ConfigValue* GCFS_ConfigDirectory::getConfigValue(const char * sName)
+{
+   return (GCFS_ConfigValue*)getChild(sName);
+}
+
+const GCFS_FileSystem::FileList* GCFS_ConfigDirectory::getConfigValues()
+{
+   return getChildren();
+}
+
 /***************************************************************************/
 GCFS_RootDirectory::GCFS_RootDirectory(GCFS_Directory* pParent): GCFS_Directory(pParent)
 {
-   
+   allocInode();
 }
+
 GCFS_Directory* GCFS_RootDirectory::mkdir(const char* sName, GCFS_Permissions* pPerm)
 {
    GCFS_Task* pTask = new GCFS_Task(this);
@@ -121,12 +132,12 @@ bool GCFS_Task::isSubmited()
 
 GCFS_ConfigValue* GCFS_Task::getConfigValue(const char * sName)
 {
-   return (GCFS_ConfigValue*)m_sConfigDirectory.getChild(sName);
+   return m_sConfigDirectory.getConfigValue(sName);
 }
 
 const GCFS_FileSystem::FileList* GCFS_Task::getConfigValues()
 {
-   return m_sConfigDirectory.getChildren();
+   return m_sConfigDirectory.getConfigValues();
 }
 
 GCFS_File* GCFS_Task::createDataFile(const char * name)
@@ -200,7 +211,7 @@ const GCFS_FileSystem::FileList* GCFS_Task::getResultFiles()
 
 GCFS_File* GCFS_Task::getExecutableFile()
 {
-   const char * psFileName = basename((char*)m_sConfigDirectory.m_sExecutable.m_sValue.c_str());
+   const char * psFileName = basename((char*)((std::string)m_sConfigDirectory.m_sExecutable).c_str());
 
    return (GCFS_File*)m_sDataDir.getChild(psFileName);
 }

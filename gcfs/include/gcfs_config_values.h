@@ -14,19 +14,23 @@ class GCFS_Task;
 class GCFS_ConfigValue : public GCFS_FileSystem
 {
 public:
-                           GCFS_ConfigValue(GCFS_Directory * pParent);
-   virtual                ~GCFS_ConfigValue();
+                              GCFS_ConfigValue(GCFS_Directory * pParent);
+   virtual                   ~GCFS_ConfigValue();
 
 public:
-    virtual ssize_t        read(std::string& sBuffer, off_t uiOffset, size_t uiSize);
-    virtual ssize_t        write(const char* sBuffer, off_t uiOffset, size_t uiSize);
+    virtual ssize_t           read(std::string& sBuffer, off_t uiOffset, size_t uiSize);
+    virtual ssize_t           write(const char* sBuffer, off_t uiOffset, size_t uiSize);
+    virtual bool              getPermissions(GCFS_Permissions& sPermissions);
+    virtual bool              copyValue(GCFS_ConfigValue* pFrom);
     
 public:
-   virtual  bool           SetValue(const char * sValue, size_t iOffset = 0) = 0;
-   virtual  bool           PrintValue(std::string &buff) = 0;
+   virtual  bool              SetValue(const char * sValue, size_t iOffset = 0) = 0;
+   virtual  bool              PrintValue(std::string &buff) = 0;
+   virtual  GCFS_ConfigValue* getValidValue();
 
 public:
    size_t         m_iSize;
+   bool           m_bIsSet;
 };
 
 // Specific configuration values
@@ -40,7 +44,7 @@ public:
    bool        PrintValue(std::string &buff);
    operator    int();
 
-public:
+protected:
    int         m_iValue;
 };
 
@@ -54,7 +58,7 @@ public:
    bool        PrintValue(std::string &buff);
    operator    std::string();
 
-public:
+protected:
    std::string m_sValue;
 };
 
@@ -71,8 +75,8 @@ public:
    bool        PrintValue(std::string &buff);
    operator    int();
 
-public:
-   uint        m_iValue;
+protected:
+   int         m_iValue;
    choices_t   m_vChoices;
 };
 
@@ -88,9 +92,9 @@ public:
    bool        SetValue(const char * sValue, size_t iOffset = 0);
    bool        SetValue(const char* sKey, const char* sValue);
    bool        PrintValue(std::string &buff);
-   operator    values_t();
+   operator    values_t&();
 
-public:
+protected:
    values_t    m_mValues;
 };
 

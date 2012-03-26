@@ -18,6 +18,7 @@ class GCFS_ConfigDirectory : public GCFS_Directory
 public:
                                       GCFS_ConfigDirectory(GCFS_Task * pTask);
     virtual                          ~GCFS_ConfigDirectory();
+    
 public:
    GCFS_ConfigInt                     m_iMemory;
    GCFS_ConfigInt                     m_iProcesses;
@@ -29,6 +30,10 @@ public:
    GCFS_ConfigString                  m_sError;
    GCFS_ConfigString                  m_sArguments;
    GCFS_ConfigEnvironment             m_sEnvironment;
+   
+public:
+   GCFS_ConfigValue*                  getConfigValue(const char * sName);
+   const GCFS_FileSystem::FileList*   getConfigValues();
 };
 
 // Root Directory

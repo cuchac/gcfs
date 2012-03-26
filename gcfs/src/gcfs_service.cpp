@@ -44,7 +44,7 @@ bool GCFS_Service::configure(CSimpleIniA& pConfig)
    {
       std::string sValue;
       for(it = pSection->begin(); it != pSection->end(); it++)
-         sValue += std::string(it->first.pItem) + "=" + it->second + ";";
+         sValue += std::string(it->first.pItem) + "='" + it->second + "' ";
       pConfigValue->SetValue(sValue.c_str(), 0);
    }
 
@@ -53,19 +53,6 @@ bool GCFS_Service::configure(CSimpleIniA& pConfig)
 
 bool GCFS_Service::customizeTask(GCFS_Task* pTask)
 {
-   const GCFS_FileSystem::FileList* mDefaultValues = m_sDefaultValues.getConfigValues();
-   GCFS_FileSystem::FileList::const_iterator itDefault;
-   GCFS_ConfigValue* pConfigValue;
-   for(itDefault = mDefaultValues->begin(); itDefault != mDefaultValues->end(); itDefault++)
-   {
-      if((pConfigValue = pTask->getConfigValue(itDefault->first.c_str())) != NULL)
-      {
-         std::string sValue;
-         itDefault->second->read(sValue, 0, 0);
-         pConfigValue->SetValue(sValue.c_str());
-      }
-   }
-   
    return true;
 }
 

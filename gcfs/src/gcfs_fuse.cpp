@@ -34,7 +34,6 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
    stbuf->st_mode = 0;
 
    mode_t iUmask = 0000;
-   GCFS_Permissions * pPermission = NULL;
    GCFS_FileSystem * pFile = NULL;
 
    pFile = GCFS_FileSystem::getInodeFile(ino);
@@ -57,7 +56,14 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
             stbuf->st_mode = S_IFREG;
             break;
       }
-      pPermission = pFile->getPermissions();
+
+      GCFS_Permissions sPermissions;
+      if(pFile->getPermissions(sPermissions))
+      {
+         stbuf->st_mode |= sPermissions.m_sMode;
+         stbuf->st_uid = sPermissions.m_iUid;
+         stbuf->st_gid = sPermissions.m_iGid;
+      }
    }
    else
    {
@@ -65,12 +71,7 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
       return -1;
    }
 
-   if(pPermission)
-   {
-      stbuf->st_mode |= pPermission->m_sMode;
-      stbuf->st_uid = pPermission->m_iUid;
-      stbuf->st_gid = pPermission->m_iGid;
-   }
+
 
    stbuf->st_nlink = 1;
    stbuf->st_mode &= ~iUmask;
@@ -96,25 +97,25 @@ static void gcfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int 
 {
    struct stat stbuf = {0};
 
-   GCFS_Permissions *pPermissions = NULL;
+   GCFS_Permissions sPermissions;
 
    GCFS_FileSystem* pFile = GCFS_FileSystem::getInodeFile(ino);
    
    if(pFile->getType() == GCFS_FileSystem::eTypeTask || ino == FUSE_ROOT_ID)
-      pPermissions = pFile->getPermissions();
-   
-   if(pPermissions)
    {
-      if(to_set & FUSE_SET_ATTR_MODE)
-         pPermissions->m_sMode = attr->st_mode & 0777;
-      
-      if(to_set & FUSE_SET_ATTR_UID)
-         pPermissions->m_iUid = attr->st_uid;
-      
-      if(to_set & FUSE_SET_ATTR_GID)
-         pPermissions->m_iGid = attr->st_gid;
+      if(pFile->getPermissions(sPermissions))
+      {
+         if(to_set & FUSE_SET_ATTR_MODE)
+            sPermissions.m_sMode = attr->st_mode & 0777;
+         
+         if(to_set & FUSE_SET_ATTR_UID)
+            sPermissions.m_iUid = attr->st_uid;
+         
+         if(to_set & FUSE_SET_ATTR_GID)
+            sPermissions.m_iGid = attr->st_gid;
+      }
    }
-    
+
    if (gcfs_stat(ino, &stbuf) == -1)
       fuse_reply_err(req, ENOENT);
    else
