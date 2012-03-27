@@ -11,45 +11,37 @@
 
 
 GCFS_ConfigDirectory::GCFS_ConfigDirectory(GCFS_Task* pTask):
-   GCFS_Directory(pTask),
-   m_iMemory(this, "1024"),
-   m_iProcesses(this, "1"),
-   m_iTimeout(this, "3600"),
-   m_iService(this, NULL, &g_sConfig.m_vServiceNames),
-   m_sExecutable(this, "./data/executable"),
-   m_sInput(this, ""),
-   m_sOutput(this, "output"),
-   m_sError(this, "error"),
-   m_sArguments(this, ""),
-   m_sEnvironment(this)
+   GCFS_Directory(pTask)
 {
-   addChild(&m_iMemory, "memory");
-   addChild(&m_iProcesses, "processes");
-   addChild(&m_iTimeout, "timeout");
-   addChild(&m_iService, "service");
-   addChild(&m_sExecutable, "executable");
-   addChild(&m_sInput, "input_file");
-   addChild(&m_sOutput, "output_file");
-   addChild(&m_sError, "error_file");
-   addChild(&m_sArguments, "arguments");
-   addChild(&m_sEnvironment, "environment");
+   m_piMemory = new GCFS_ConfigInt(this, "1024");
+   m_piProcesses = new GCFS_ConfigInt(this, "1");
+   m_piTimeout = new GCFS_ConfigInt(this, "3600");
+   m_piService = new GCFS_ConfigService(this, NULL, &g_sConfig.m_vServiceNames);
+   m_psExecutable = new GCFS_ConfigString(this, "./data/executable");
+   m_psInput = new GCFS_ConfigString(this, "");
+   m_psOutput = new GCFS_ConfigString(this, "output");
+   m_psError = new GCFS_ConfigString(this, "error");
+   m_psArguments = new GCFS_ConfigString(this, "");
+   m_psEnvironment = new GCFS_ConfigEnvironment(this);
+
+   addChild(m_piMemory, "memory");
+   addChild(m_piProcesses, "processes");
+   addChild(m_piTimeout, "timeout");
+   addChild(m_piService, "service");
+   addChild(m_psExecutable, "executable");
+   addChild(m_psInput, "input_file");
+   addChild(m_psOutput, "output_file");
+   addChild(m_psError, "error_file");
+   addChild(m_psArguments, "arguments");
+   addChild(m_psEnvironment, "environment");
    
    // Set default service
-   m_iService.SetValue(g_sConfig.m_sDefaultService.c_str());
+   m_piService->SetValue(g_sConfig.m_sDefaultService.c_str());
 }
 
 GCFS_ConfigDirectory::~GCFS_ConfigDirectory()
 {
-   removeChild("memory", false);
-   removeChild("processes", false);
-   removeChild("timeout", false);
-   removeChild("service", false);
-   removeChild("executable", false);
-   removeChild("input_file", false);
-   removeChild("output_file", false);
-   removeChild("error_file", false);
-   removeChild("arguments", false);
-   removeChild("environment", false);
+   
 }
 
 GCFS_ConfigValue* GCFS_ConfigDirectory::getConfigValue(const char * sName)
@@ -83,38 +75,30 @@ GCFS_Task::GCFS_Task(GCFS_Directory * pParent):
    GCFS_RootDirectory(pParent),
    m_eStatus(eNew),
    m_pServiceData(NULL),
-   m_sPermissions(),
-   
-   m_sControl(this),
-   m_sStatus(this),
-   m_sConfigDirectory(this),
-   m_sDataDir(this),
-   m_sResultDir(this),
-   m_sExecutable(this)
+   m_sPermissions()
 {
-   addChild(&m_sControl, "control");
-   addChild(&m_sExecutable, "executable");
-   addChild(&m_sStatus, "status");
+   m_pControl = new GCFS_ControlControl(this);
+   m_pStatus = new GCFS_ControlStatus(this);
+   m_pConfigDirectory = new GCFS_ConfigDirectory(this);
+   m_pDataDir = new GCFS_Directory(this);
+   m_pResultDir = new GCFS_Directory(this);
+   m_pExecutable = new GCFS_Task::ExecutableSymlink(this);
    
-   addChild(&m_sConfigDirectory, "config");
-   addChild(&m_sDataDir, "data");
-   addChild(&m_sResultDir, "result");
+   addChild(m_pControl, "control");
+   addChild(m_pExecutable, "executable");
+   addChild(m_pStatus, "status");
+   
+   addChild(m_pConfigDirectory, "config");
+   addChild(m_pDataDir, "data");
+   addChild(m_pResultDir, "result");
 }
 
 GCFS_Task::~GCFS_Task()
 {
-   GCFS_Service* pService = g_sConfig.GetService(m_sConfigDirectory.m_iService);
+   GCFS_Service* pService = g_sConfig.GetService(m_pConfigDirectory->m_piService->get());
 
    if (pService)
       pService->deleteTask(this);
-   
-   removeChild("control", false);
-   removeChild("executable", false);
-   removeChild("status", false);
-   
-   removeChild("config", false);
-   removeChild("data", false);
-   removeChild("result", false);
 }
 
 GCFS_FileSystem::EType GCFS_Task::getType()
@@ -134,12 +118,12 @@ bool GCFS_Task::isSubmited()
 
 GCFS_ConfigValue* GCFS_Task::getConfigValue(const char * sName)
 {
-   return m_sConfigDirectory.getConfigValue(sName);
+   return m_pConfigDirectory->getConfigValue(sName);
 }
 
 const GCFS_FileSystem::FileList* GCFS_Task::getConfigValues()
 {
-   return m_sConfigDirectory.getConfigValues();
+   return m_pConfigDirectory->getConfigValues();
 }
 
 GCFS_File* GCFS_Task::createDataFile(const char * name)
@@ -149,7 +133,7 @@ GCFS_File* GCFS_Task::createDataFile(const char * name)
    if ((pFile = getDataFile(name)))
       return pFile;
    
-   return (GCFS_File*)m_sDataDir.create(name, GCFS_FileSystem::eTypePhysicalFile);
+   return (GCFS_File*)m_pDataDir->create(name, GCFS_FileSystem::eTypePhysicalFile);
 }
 
 bool GCFS_Task::deleteDataFile(const char * name)
@@ -166,12 +150,12 @@ bool GCFS_Task::deleteDataFile(const char * name)
 
 GCFS_File* GCFS_Task::getDataFile(const char * name)
 {
-   return (GCFS_File*)m_sDataDir.getChild(name);
+   return (GCFS_File*)m_pDataDir->getChild(name);
 }
 
 const GCFS_FileSystem::FileList* GCFS_Task::getDataFiles()
 {
-   return m_sDataDir.getChildren();
+   return m_pDataDir->getChildren();
 }
 
 GCFS_File* GCFS_Task::createResultFile(const char * name, bool bCreate)
@@ -181,7 +165,7 @@ GCFS_File* GCFS_Task::createResultFile(const char * name, bool bCreate)
    if ((pFile = getDataFile(name)))
       return pFile;
    
-   pFile = (GCFS_File*)m_sResultDir.create(name, GCFS_FileSystem::eTypePhysicalFile);
+   pFile = (GCFS_File*)m_pResultDir->create(name, GCFS_FileSystem::eTypePhysicalFile);
    
    if(bCreate)
       pFile->open();
@@ -203,19 +187,19 @@ bool GCFS_Task::deleteResultFile(const char * name)
 
 GCFS_File* GCFS_Task::getResultFile(const char * name)
 {
-   return (GCFS_File*)m_sResultDir.getChild(name);
+   return (GCFS_File*)m_pResultDir->getChild(name);
 }
 
 const GCFS_FileSystem::FileList* GCFS_Task::getResultFiles()
 {
-   return m_sResultDir.getChildren();
+   return m_pResultDir->getChildren();
 }
 
 GCFS_File* GCFS_Task::getExecutableFile()
 {
-   const char * psFileName = basename((char*)((std::string)m_sConfigDirectory.m_sExecutable).c_str());
+   const char * psFileName = basename((char*)m_pConfigDirectory->m_psExecutable->get());
 
-   return (GCFS_File*)m_sDataDir.getChild(psFileName);
+   return (GCFS_File*)m_pDataDir->getChild(psFileName);
 }
 
 // Executable symlink

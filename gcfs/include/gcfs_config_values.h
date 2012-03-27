@@ -42,7 +42,7 @@ public:
 
    bool        SetValue(const char * sValue, size_t iOffset = 0);
    bool        PrintValue(std::string &buff);
-   operator    int();
+   int         get();
 
 protected:
    int         m_iValue;
@@ -56,7 +56,8 @@ public:
 
    bool        SetValue(const char * sValue, size_t iOffset = 0);
    bool        PrintValue(std::string &buff);
-   operator    std::string();
+   const char *get();
+   std::string&getString();
 
 protected:
    std::string m_sValue;
@@ -73,7 +74,7 @@ public:
 
    bool        SetValue(const char * sValue, size_t iOffset = 0);
    bool        PrintValue(std::string &buff);
-   operator    int();
+   int         get();
 
 protected:
    int         m_iValue;
@@ -92,7 +93,7 @@ public:
    bool        SetValue(const char * sValue, size_t iOffset = 0);
    bool        SetValue(const char* sKey, const char* sValue);
    bool        PrintValue(std::string &buff);
-   operator    values_t&();
+   values_t&   get();
 
 protected:
    values_t    m_mValues;

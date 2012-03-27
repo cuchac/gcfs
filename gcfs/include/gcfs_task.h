@@ -20,16 +20,16 @@ public:
     virtual                          ~GCFS_ConfigDirectory();
     
 public:
-   GCFS_ConfigInt                     m_iMemory;
-   GCFS_ConfigInt                     m_iProcesses;
-   GCFS_ConfigInt                     m_iTimeout;
-   GCFS_ConfigService                 m_iService;
-   GCFS_ConfigString                  m_sExecutable;
-   GCFS_ConfigString                  m_sInput;
-   GCFS_ConfigString                  m_sOutput;
-   GCFS_ConfigString                  m_sError;
-   GCFS_ConfigString                  m_sArguments;
-   GCFS_ConfigEnvironment             m_sEnvironment;
+   GCFS_ConfigInt*                     m_piMemory;
+   GCFS_ConfigInt*                     m_piProcesses;
+   GCFS_ConfigInt*                     m_piTimeout;
+   GCFS_ConfigService*                 m_piService;
+   GCFS_ConfigString*                  m_psExecutable;
+   GCFS_ConfigString*                  m_psInput;
+   GCFS_ConfigString*                  m_psOutput;
+   GCFS_ConfigString*                  m_psError;
+   GCFS_ConfigString*                  m_psArguments;
+   GCFS_ConfigEnvironment*             m_psEnvironment;
    
 public:
    GCFS_ConfigValue*                  getConfigValue(const char * sName);
@@ -78,14 +78,14 @@ public:
    
 // Control files
 public:
-   GCFS_ControlControl                 m_sControl;
-   GCFS_ControlStatus                  m_sStatus;
+   GCFS_ControlControl*                m_pControl;
+   GCFS_ControlStatus*                 m_pStatus;
 
 // Configuration directory
 public:
-   GCFS_ConfigValue*                  getConfigValue(const char * sName);
-   const GCFS_FileSystem::FileList*   getConfigValues();
-   GCFS_ConfigDirectory               m_sConfigDirectory;
+   GCFS_ConfigValue*                   getConfigValue(const char * sName);
+   const GCFS_FileSystem::FileList*    getConfigValues();
+   GCFS_ConfigDirectory*               m_pConfigDirectory;
 
 // Task Data and Result directories
 public:
@@ -101,8 +101,8 @@ public:
    GCFS_File*                          getExecutableFile();
 
 protected:
-   GCFS_Directory                      m_sDataDir;
-   GCFS_Directory                      m_sResultDir;
+   GCFS_Directory*                     m_pDataDir;
+   GCFS_Directory*                     m_pResultDir;
    
 // Executable symlink
 public:
@@ -112,7 +112,8 @@ public:
    public:
         virtual ssize_t read(std::string& sBuffer, off_t uiOffset, size_t uiSize);
         virtual ssize_t write(const char* sBuffer, off_t uiOffset, size_t uiSize);
-   }                                   m_sExecutable;
+   };
+   ExecutableSymlink*                  m_pExecutable;
 };
 
 class GCFS_TaskManager 

@@ -112,7 +112,7 @@ GCFS_ConfigValue* GCFS_ConfigValue::getValidValue()
       }
 
       // No value set, use default from config
-      GCFS_Service* pService = g_sConfig.GetService(getParentTask()->m_sConfigDirectory.m_iService);
+      GCFS_Service* pService = g_sConfig.GetService(getParentTask()->m_pConfigDirectory->m_piService->get());
       if(pService)
          return pService->m_sDefaultValues.getConfigValue(sName);
    }
@@ -142,7 +142,7 @@ bool GCFS_ConfigInt::PrintValue(std::string& buff)
    return true;
 }
 
-GCFS_ConfigInt::operator int()
+int GCFS_ConfigInt::get()
 {
    return m_iValue;
 }
@@ -168,7 +168,12 @@ bool GCFS_ConfigString::PrintValue(std::string& buff)
    return true;
 }
 
-GCFS_ConfigString::operator std::string()
+const char* GCFS_ConfigString::get()
+{
+   return m_sValue.c_str();
+}
+
+std::string& GCFS_ConfigString::getString()
 {
    return m_sValue;
 }
@@ -222,7 +227,7 @@ bool GCFS_ConfigChoice::PrintValue(std::string& buff)
    return true;
 }
 
-GCFS_ConfigChoice::operator int()
+int GCFS_ConfigChoice::get()
 {
    return m_iValue;
 }
@@ -283,7 +288,7 @@ bool GCFS_ConfigEnvironment::PrintValue(std::string& buff)
    return true;
 }
 
-GCFS_ConfigEnvironment::operator values_t&()
+GCFS_ConfigEnvironment::values_t& GCFS_ConfigEnvironment::get()
 {
    return m_mValues;
 }
