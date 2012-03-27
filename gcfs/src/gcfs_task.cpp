@@ -7,6 +7,7 @@
 #include "gcfs_config.h"
 #include <gcfs_controls.h>
 #include <gcfs_service.h>
+#include <gcfs_utils.h>
 
 
 GCFS_ConfigDirectory::GCFS_ConfigDirectory(GCFS_Task* pTask):
@@ -88,10 +89,11 @@ GCFS_Task::GCFS_Task(GCFS_Directory * pParent):
    m_sStatus(this),
    m_sConfigDirectory(this),
    m_sDataDir(this),
-   m_sResultDir(this)
+   m_sResultDir(this),
+   m_sExecutable(this)
 {
    addChild(&m_sControl, "control");
-   //addChild(&m_sControl, "executable");
+   addChild(&m_sExecutable, "executable");
    addChild(&m_sStatus, "status");
    
    addChild(&m_sConfigDirectory, "config");
@@ -106,8 +108,8 @@ GCFS_Task::~GCFS_Task()
    if (pService)
       pService->deleteTask(this);
    
-   removeChild( "control", false);
-   //removeChild("executable", false);
+   removeChild("control", false);
+   removeChild("executable", false);
    removeChild("status", false);
    
    removeChild("config", false);
@@ -216,6 +218,24 @@ GCFS_File* GCFS_Task::getExecutableFile()
    return (GCFS_File*)m_sDataDir.getChild(psFileName);
 }
 
+// Executable symlink
+/***************************************************************************/
+GCFS_Task::ExecutableSymlink::ExecutableSymlink(GCFS_Directory* pParent): GCFS_Link(pParent)
+{
+   
+}
+
+ssize_t GCFS_Task::ExecutableSymlink::read(std::string& sBuffer, off_t uiOffset, size_t uiSize)
+{
+   ssize_t sRet = getParentTask()->getConfigValue("executable")->read(sBuffer, uiOffset, uiSize);
+   sBuffer = GCFS_Utils::TrimStr(sBuffer);
+   return sRet;
+}
+
+ssize_t GCFS_Task::ExecutableSymlink::write(const char* sBuffer, off_t uiOffset, size_t uiSize)
+{
+   return 0;
+}
 
 // Task Manager
 /***************************************************************************/

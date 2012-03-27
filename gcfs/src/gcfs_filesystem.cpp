@@ -331,3 +331,14 @@ void GCFS_File::setPath(const char* sPath)
 {
    m_sPath = sPath;
 }
+
+/***************************************************************************/
+GCFS_Link::GCFS_Link(GCFS_Directory* pParent): GCFS_FileSystem(pParent)
+{
+   
+}
+
+GCFS_FileSystem::EType GCFS_Link::getType()
+{
+   return GCFS_FileSystem::eTypeLink;
+}

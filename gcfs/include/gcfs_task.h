@@ -103,6 +103,16 @@ public:
 protected:
    GCFS_Directory                      m_sDataDir;
    GCFS_Directory                      m_sResultDir;
+   
+// Executable symlink
+public:
+   class ExecutableSymlink : public GCFS_Link {
+   public:
+        ExecutableSymlink(GCFS_Directory* pParent);
+   public:
+        virtual ssize_t read(std::string& sBuffer, off_t uiOffset, size_t uiSize);
+        virtual ssize_t write(const char* sBuffer, off_t uiOffset, size_t uiSize);
+   } m_sExecutable;
 };
 
 class GCFS_TaskManager 

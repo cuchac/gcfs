@@ -119,4 +119,18 @@ private:
    int                        m_hFile;
 };
 
+/***************************************************************************/
+class GCFS_Link : public GCFS_FileSystem
+{
+public:
+                              GCFS_Link(GCFS_Directory * pParent);
+
+public:
+   virtual EType              getType();
+   
+public:
+   virtual ssize_t            read(std::string &sBuffer, off_t uiOffset, size_t uiSize) = 0;
+   virtual ssize_t            write(const char* sBuffer, off_t uiOffset, size_t uiSize) = 0;
+};
+
 #endif // GCFS_FILESYSTEM_H

@@ -277,7 +277,9 @@ static void gcfs_readlink(fuse_req_t req, fuse_ino_t ino)
    
    if(pFile && pFile->getType() == GCFS_FileSystem::eTypeLink)
    {
-      // TODO: fuse_reply_readlink(req, pFile->);
+      std::string sBuffer;
+      pFile->read(sBuffer, 0, 0);
+      fuse_reply_readlink(req, sBuffer.c_str());
       return;
    }
 
