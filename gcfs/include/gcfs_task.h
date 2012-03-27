@@ -112,7 +112,7 @@ public:
    public:
         virtual ssize_t read(std::string& sBuffer, off_t uiOffset, size_t uiSize);
         virtual ssize_t write(const char* sBuffer, off_t uiOffset, size_t uiSize);
-   } m_sExecutable;
+   }                                   m_sExecutable;
 };
 
 class GCFS_TaskManager 

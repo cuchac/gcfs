@@ -286,6 +286,33 @@ static void gcfs_readlink(fuse_req_t req, fuse_ino_t ino)
    fuse_reply_err(req, EEXIST);
 }
 
+static void gcfs_symlink(fuse_req_t req, const char *link, fuse_ino_t parent, const char *name)
+{
+   GCFS_FileSystem *pFile = GCFS_FileSystem::getInodeFile(parent);
+   
+   if(pFile && pFile->getType() == GCFS_FileSystem::eTypeDirectory)
+   {
+      GCFS_FileSystem* pNewFile = pFile->create(name, GCFS_FileSystem::eTypeLink);
+      
+      if(pNewFile)
+      {
+         // Set link target
+         pNewFile->write(link, 0, strlen(link));
+         
+         // Fill reply buffer
+         struct fuse_entry_param e = {0};
+         e.ino = pNewFile->getInode();
+
+         gcfs_stat(e.ino, &e.attr);
+         
+         fuse_reply_entry(req, &e);
+         return;
+      }
+   }
+   
+   fuse_reply_err(req, EINVAL);
+}
+
 static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
 {
    GCFS_FileSystem *pFile = GCFS_FileSystem::getInodeFile(parent);
@@ -424,6 +451,7 @@ int init_fuse(int argc, char *argv[])
 	gcfs_oper.statfs	= gcfs_statfs;
 	gcfs_oper.access	= gcfs_access;
 	gcfs_oper.readlink= gcfs_readlink;
+   gcfs_oper.symlink = gcfs_symlink;
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct fuse_chan *ch;
