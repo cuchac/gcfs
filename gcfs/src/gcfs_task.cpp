@@ -16,7 +16,7 @@ GCFS_ConfigDirectory::GCFS_ConfigDirectory(GCFS_Task* pTask):
    m_piMemory = new GCFS_ConfigInt(this, "1024");
    m_piProcesses = new GCFS_ConfigInt(this, "1");
    m_piTimeout = new GCFS_ConfigInt(this, "3600");
-   m_piService = new GCFS_ConfigService(this, NULL, &g_sConfig.m_vServiceNames);
+   m_piService = new GCFS_ConfigService(this, NULL, NULL);
    m_psExecutable = new GCFS_ConfigString(this, "./data/executable");
    m_psInput = new GCFS_ConfigString(this, "");
    m_psOutput = new GCFS_ConfigString(this, "output");

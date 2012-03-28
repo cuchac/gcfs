@@ -38,29 +38,29 @@ public:
 class GCFS_ConfigInt: public GCFS_ConfigValue
 {
 public:
-               GCFS_ConfigInt(GCFS_Directory * pParent, const char *sDefault);
+                  GCFS_ConfigInt(GCFS_Directory * pParent, const char *sDefault);
 
-   bool        SetValue(const char * sValue, size_t iOffset = 0);
-   bool        PrintValue(std::string &buff);
-   int         get();
+   virtual bool   SetValue(const char * sValue, size_t iOffset = 0);
+   virtual bool   PrintValue(std::string &buff);
+   int            get();
 
 protected:
-   int         m_iValue;
+   int            m_iValue;
 };
 
 /***************************************************************************/
 class GCFS_ConfigString: public GCFS_ConfigValue
 {
 public:
-               GCFS_ConfigString(GCFS_Directory * pParent, const char *sDefault);
+                  GCFS_ConfigString(GCFS_Directory * pParent, const char *sDefault);
 
-   bool        SetValue(const char * sValue, size_t iOffset = 0);
-   bool        PrintValue(std::string &buff);
-   const char *get();
-   std::string&getString();
+   virtual bool   SetValue(const char * sValue, size_t iOffset = 0);
+   virtual bool   PrintValue(std::string &buff);
+   const char *   get();
+   std::string&   getString();
 
 protected:
-   std::string m_sValue;
+   std::string    m_sValue;
 };
 
 /***************************************************************************/
@@ -70,15 +70,16 @@ public:
    typedef std::vector<std::string> choices_t;
 
 public:
-               GCFS_ConfigChoice(GCFS_Directory * pParent, const char* sDefault = NULL, GCFS_ConfigChoice::choices_t* pvChoices = NULL);
+                        GCFS_ConfigChoice(GCFS_Directory * pParent, const char* sDefault = NULL, GCFS_ConfigChoice::choices_t* pvChoices = NULL);
 
-   bool        SetValue(const char * sValue, size_t iOffset = 0);
-   bool        PrintValue(std::string &buff);
-   int         get();
+   virtual bool         SetValue(const char * sValue, size_t iOffset = 0);
+   virtual bool         PrintValue(std::string &buff);
+   int                  get();
 
 protected:
-   int         m_iValue;
-   choices_t   m_vChoices;
+   int                  m_iValue;
+   choices_t            m_vChoices;
+   virtual choices_t&   getChoices();
 };
 
 /***************************************************************************/
@@ -88,25 +89,28 @@ public:
                typedef std::map<std::string, std::string> values_t;
 
 public:
-               GCFS_ConfigEnvironment(GCFS_Directory * pParent, const char* sDefault = NULL);
+                        GCFS_ConfigEnvironment(GCFS_Directory * pParent, const char* sDefault = NULL);
 
-   bool        SetValue(const char * sValue, size_t iOffset = 0);
-   bool        SetValue(const char* sKey, const char* sValue);
-   bool        PrintValue(std::string &buff);
-   values_t&   get();
+   virtual bool         SetValue(const char * sValue, size_t iOffset = 0);
+   bool                 SetValue(const char* sKey, const char* sValue);
+   virtual bool         PrintValue(std::string &buff);
+   values_t&            get();
 
 protected:
-   values_t    m_mValues;
+   values_t             m_mValues;
 };
 
 /***************************************************************************/
 class GCFS_ConfigService: public GCFS_ConfigChoice
 {
 public:
-            GCFS_ConfigService(GCFS_Directory * pParent, const char* sDefault = NULL, GCFS_ConfigChoice::choices_t* pvChoices = NULL);
+                        GCFS_ConfigService(GCFS_Directory * pParent, const char* sDefault = NULL, GCFS_ConfigChoice::choices_t* pvChoices = NULL);
 
 public:
-   bool     SetValue(const char * sValue, size_t iOffset = 0);
+   virtual bool         SetValue(const char * sValue, size_t iOffset = 0);
+
+protected:
+   virtual choices_t&   getChoices();
 };
 
 #endif /*__GCFS_CONFIG_VALUES__*/

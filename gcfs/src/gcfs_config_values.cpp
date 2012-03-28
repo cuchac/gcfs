@@ -195,9 +195,11 @@ bool GCFS_ConfigChoice::SetValue(const char* sValue, size_t iOffset)
    if(!sValue)
       return false;
 
+   choices_t& vChoices = getChoices();
+   
    int iVal = -1;
-   for(int iIndex = 0; iIndex < (int)m_vChoices.size(); iIndex ++)
-      if(strcasecmp(m_vChoices[iIndex].c_str(), sValue) == 0)
+   for(int iIndex = 0; iIndex < (int)vChoices.size(); iIndex ++)
+      if(strcasecmp(vChoices[iIndex].c_str(), sValue) == 0)
          iVal = iIndex;
 
    if(iVal < 0)
@@ -210,7 +212,8 @@ bool GCFS_ConfigChoice::SetValue(const char* sValue, size_t iOffset)
 
 bool GCFS_ConfigChoice::PrintValue(std::string& buff)
 {
-   for(int iIndex = 0; iIndex < (int)m_vChoices.size(); iIndex ++)
+   choices_t& vChoices = getChoices();
+   for(int iIndex = 0; iIndex < (int)vChoices.size(); iIndex ++)
    {
       if(iIndex > 0)
          buff += ", ";
@@ -218,7 +221,7 @@ bool GCFS_ConfigChoice::PrintValue(std::string& buff)
       if(iIndex == m_iValue)
          buff +=  "[";
 
-      buff += m_vChoices[iIndex];
+      buff += vChoices[iIndex];
 
       if(iIndex == m_iValue)
          buff +=  "]";
@@ -231,6 +234,12 @@ int GCFS_ConfigChoice::get()
 {
    return m_iValue;
 }
+
+GCFS_ConfigChoice::choices_t& GCFS_ConfigChoice::getChoices()
+{
+   return m_vChoices;
+}
+
 
 /***************************************************************************/
 GCFS_ConfigEnvironment::GCFS_ConfigEnvironment(GCFS_Directory * pParent, const char* sDefault): GCFS_ConfigValue(pParent)
@@ -314,3 +323,7 @@ bool GCFS_ConfigService::SetValue(const char* sValue, size_t iOffset)
    return true;
 }
 
+GCFS_ConfigChoice::choices_t& GCFS_ConfigService::getChoices()
+{
+   return g_sConfig.m_vServiceNames;
+}
