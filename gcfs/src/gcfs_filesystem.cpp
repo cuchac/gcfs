@@ -84,6 +84,11 @@ bool GCFS_FileSystem::getPermissions(GCFS_Permissions& sPermissions)
    return true;
 }
 
+bool GCFS_FileSystem::setPermissions(GCFS_Permissions& sPermissions)
+{
+   return false;
+}
+
 const GCFS_FileSystem::FileList* GCFS_FileSystem::getChildren()
 {
    return NULL;

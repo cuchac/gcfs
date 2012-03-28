@@ -115,6 +115,8 @@ static void gcfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int 
          if(to_set & FUSE_SET_ATTR_GID)
             sPermissions.m_iGid = attr->st_gid;
       }
+
+      pFile->setPermissions(sPermissions);
    }
 
    if (gcfs_stat(ino, &stbuf) == -1)

@@ -67,6 +67,9 @@ public:
                                       ~GCFS_Task();
                                       
    virtual EType                       getType();
+   virtual bool                        getPermissions(GCFS_Permissions& sPermissions);
+   virtual bool                        setPermissions(GCFS_Permissions& sPermissions);
+   
 public:
    bool                                isFinished();
    bool                                isSubmited();

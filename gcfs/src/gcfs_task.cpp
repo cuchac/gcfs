@@ -106,6 +106,19 @@ GCFS_FileSystem::EType GCFS_Task::getType()
    return eTypeTask;
 }
 
+bool GCFS_Task::getPermissions(GCFS_Permissions& sPermissions)
+{
+   sPermissions = m_sPermissions;
+   
+   return true;
+}
+
+bool GCFS_Task::setPermissions(GCFS_Permissions& sPermissions)
+{
+   m_sPermissions = sPermissions;
+   return true;
+}
+
 bool GCFS_Task::isFinished()
 {
    return m_eStatus == GCFS_Task::eFinished || m_eStatus == GCFS_Task::eAborted || m_eStatus == GCFS_Task::eFailed;

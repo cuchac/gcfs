@@ -43,6 +43,7 @@ public:
    
    virtual off_t              getSize();
    virtual bool               getPermissions(GCFS_Permissions &sPermissions);
+   virtual bool               setPermissions(GCFS_Permissions &sPermissions);
    virtual const FileList*    getChildren();
    virtual const GCFS_FileSystem*    getChild(const char * sName);
    
