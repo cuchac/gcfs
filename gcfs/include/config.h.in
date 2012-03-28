@@ -3,5 +3,6 @@
 
 #cmakedefine       GCFS_MODULE_CONDOR
 #cmakedefine       GCFS_MODULE_SAGA
+#cmakedefine       GCFS_MODULE_DIGEDAG
 
 #endif /*__CONFIG_H*/

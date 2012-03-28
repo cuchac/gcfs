@@ -8,6 +8,9 @@
 #ifdef GCFS_MODULE_SAGA
    #include "lib/module_saga/gcfs_servicesaga.h"
 #endif
+#ifdef GCFS_MODULE_DIGEDAG
+#include "lib/module_digedag/gcfs_servicedigedag.h"
+#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -68,6 +71,11 @@ GCFS_Service*	GCFS_Service::createService(const char * sModule, const char * sNa
 #ifdef GCFS_MODULE_SAGA
    if(strcasecmp(sModule, "saga") == 0)
       return new GCFS_ServiceSaga(sName);
+#endif
+
+#ifdef GCFS_MODULE_DIGEDAG
+   if(strcasecmp(sModule, "digedag") == 0)
+      return new GCFS_ServiceDigedag(sName);
 #endif
 
    printf("Error! Unknown service driver: %s\n", sModule);
