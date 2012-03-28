@@ -4,10 +4,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sstream>
+#include <stdio.h>
 
 #include "gcfs.h"
 #include "gcfs_config.h"
 #include "gcfs_task.h"
+#include <gcfs_utils.h>
 
 // RootDir has inode=1 and is allocated first 
 ino_t GCFS_FileSystem::s_uiFirstAvailableInode = 1;
@@ -222,7 +224,8 @@ GCFS_FileSystem* GCFS_Directory::create(const char* sName, GCFS_FileSystem::ETyp
       pFile->setPath(os.str().c_str());
       
       // Ensure no old file exists
-      unlink(pFile->getPath());
+      GCFS_Utils::rmdirRecursive(pFile->getPath());
+      remove(pFile->getPath());
 
       GCFS_Permissions sPermissions;
       getPermissions(sPermissions);

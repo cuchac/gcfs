@@ -39,10 +39,10 @@ bool GCFS_Config::loadConfig()
 
       m_sDataDir = ini.GetValue("Global", "data_path", "");
       if(m_sDataDir.empty())
-               {
-                        printf("Configure error: Mandatory value 'data_path' in 'Global' section not found!\nExiting now.\n");
-                        return false;
-               }
+      {
+         printf("Configure error: Mandatory value 'data_path' in 'Global' section not found!\nExiting now.\n");
+         return false;
+      }
 
       // Make sure path ends with slash
       if(*(m_sDataDir.rbegin()) != '/')

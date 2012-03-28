@@ -10,6 +10,11 @@
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
 
+#ifdef __APPLE__
+   #define setresgid(a,b,c) setregid(a, b)
+   #define setresuid(a,b,c) setreuid(a, b)
+#endif
+
 // Characters to trim from configuration names and values
 #define GCFS_CONFIG_TRIMCHARS " \r\n"
 // Delimiters of configuration values
