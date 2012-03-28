@@ -162,7 +162,7 @@ GCFS_File* GCFS_Task::createResultFile(const char * name, bool bCreate)
 {
    GCFS_File *pFile;
    
-   if ((pFile = getDataFile(name)))
+   if ((pFile = getResultFile(name)))
       return pFile;
    
    pFile = (GCFS_File*)m_pResultDir->create(name, GCFS_FileSystem::eTypePhysicalFile);

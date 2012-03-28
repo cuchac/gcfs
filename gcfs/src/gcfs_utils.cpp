@@ -104,7 +104,7 @@ int chmod_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW 
 	if (rv)
 		perror(fpath);
 
-	return rv;
+	return 0;
 }
 
 bool GCFS_Utils::chmodRecursive(const char *sPath, mode_t iMode)

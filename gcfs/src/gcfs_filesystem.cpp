@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sstream>
 
 #include "gcfs.h"
 #include "gcfs_config.h"
@@ -216,23 +217,17 @@ GCFS_FileSystem* GCFS_Directory::create(const char* sName, GCFS_FileSystem::ETyp
       GCFS_File *pFile = new GCFS_File(getParent());
       
       // Create file path in data directory
-      int iInode = pFile->getInode();
-      char buff[32];
-      snprintf(buff, sizeof(buff), "%x", iInode);
-      
-      // COntruct path
-      std::string sPath = g_sConfig.m_sDataDir + "/" + buff;
-      pFile->setPath(sPath.c_str());
+      std::ostringstream os;
+      os << g_sConfig.m_sDataDir << "/" << pFile->getInode();
+      pFile->setPath(os.str().c_str());
       
       // Ensure no old file exists
-      unlink(sPath.c_str());
-      
-      pFile->open();
+      unlink(pFile->getPath());
 
       GCFS_Permissions sPermissions;
       getPermissions(sPermissions);
       
-      chown(sPath.c_str(), sPermissions.m_iUid, sPermissions.m_iGid);
+      chown(pFile->getPath(), sPermissions.m_iUid, sPermissions.m_iGid);
       
       addChild(pFile, sName);
       

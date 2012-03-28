@@ -45,12 +45,11 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	// Allow world to write into submission dir - security suicide but necessary for non-root Condor
 	chmod(sSubmitDir.c_str(), 0777);
 
-   std::string sExecutableName = basename((char*)pTask->m_pConfigDirectory->m_psExecutable->get());
-   std::string sExecutable = sSubmitDir + sExecutableName.c_str();
+   GCFS_File* pExecutableFile = pTask->getExecutableFile();
+   std::string sExecutableName = pExecutableFile->getName();
+   std::string sExecutable = sSubmitDir + sExecutableName;
    
 	//Link executable into submit directory
-	GCFS_File* pExecutableFile = pTask->getExecutableFile();
-   
 	link(pExecutableFile->getPath(), sExecutable.c_str());
 	chmod(sExecutable.c_str(), 0777);
 
@@ -69,7 +68,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 	// Fill-in executable environment
 	std::vector <std::string> vEnvironment;
 	GCFS_ConfigEnvironment::values_t::iterator it;
-   GCFS_ConfigEnvironment::values_t &mEnvValues = (GCFS_ConfigEnvironment::values_t&)pTask->m_pConfigDirectory->m_psEnvironment;
+   GCFS_ConfigEnvironment::values_t &mEnvValues = pTask->m_pConfigDirectory->m_psEnvironment->get();
    for(it = mEnvValues.begin(); it != mEnvValues.end(); it++)
 		vEnvironment.push_back(it->first+"="+it->second);
 	
@@ -280,8 +279,7 @@ bool GCFS_ServiceSaga::finishTask(GCFS_Task* pTask, const char * sMessage)
 	}
 
 	// Remove executable from submitdir to prevent copying to result dir
-	std::string sExecutable = sSubmitDir+basename((char*)pTask->m_pConfigDirectory->m_psExecutable->get());
-	unlink(sExecutable.c_str());
+   unlink(pTask->getExecutableFile()->getName());
 
 	DIR* pDir = opendir(sSubmitDir.c_str());
 	dirent* pDirFile;
