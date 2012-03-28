@@ -51,6 +51,7 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
             break;
          case GCFS_FileSystem::eTypePhysicalFile:
             stat(((GCFS_File*)pFile)->getPath(), stbuf);
+            stbuf->st_ino = ino;
             break;
          default:
             stbuf->st_mode = S_IFREG;
@@ -374,6 +375,8 @@ static void gcfs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mod
 
    if(pParent && (pFile = pParent->create(name, GCFS_FileSystem::eTypePhysicalFile)) != NULL)
    {
+      pFile->open();
+      
       struct fuse_entry_param e = {0};
 
       e.ino = pFile->getInode();

@@ -132,8 +132,11 @@ GCFS_File* GCFS_Task::createDataFile(const char * name)
 
    if ((pFile = getDataFile(name)))
       return pFile;
+
+   pFile = (GCFS_File*)m_pDataDir->create(name, GCFS_FileSystem::eTypePhysicalFile);
+   pFile->open();
    
-   return (GCFS_File*)m_pDataDir->create(name, GCFS_FileSystem::eTypePhysicalFile);
+   return pFile;
 }
 
 bool GCFS_Task::deleteDataFile(const char * name)

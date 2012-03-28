@@ -214,7 +214,7 @@ GCFS_FileSystem* GCFS_Directory::create(const char* sName, GCFS_FileSystem::ETyp
 {
    if(eType == eTypePhysicalFile)
    {
-      GCFS_File *pFile = new GCFS_File(getParent());
+      GCFS_File *pFile = new GCFS_File(this);
       
       // Create file path in data directory
       std::ostringstream os;
