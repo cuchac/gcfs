@@ -21,6 +21,7 @@ public:
 
    // Hook for service-dependent customization of task
    virtual bool               customizeTask(GCFS_Task* pTask);
+   virtual bool               decustomizeTask(GCFS_Task* pTask);
 
 public:
    // Factory of modules instances

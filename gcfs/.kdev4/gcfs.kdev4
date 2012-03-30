@@ -40,6 +40,7 @@ Working Directory=file:///root/workspace/skola/erasmus/project/git/gcfs/build/
 isExecutable=false
 
 [MakeBuilder]
+Additional Options=\s-j5
 Number Of Jobs=1
 
 [Project]

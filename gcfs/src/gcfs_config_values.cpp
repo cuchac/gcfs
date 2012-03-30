@@ -312,13 +312,20 @@ GCFS_ConfigService::GCFS_ConfigService(GCFS_Directory * pParent, const char* sDe
 
 bool GCFS_ConfigService::SetValue(const char* sValue, size_t iOffset)
 {
+   int iOldValue = m_iValue;
+   
    bool bRet = GCFS_ConfigChoice::SetValue(sValue, iOffset);
 
    if(!bRet)
       return bRet;
 
-   if(m_iValue >= 0)
+   if(m_iValue >= 0 && iOldValue != m_iValue)
+   {
+      if(m_iValue >= 0)
+         g_sConfig.GetService(iOldValue)->decustomizeTask(getParentTask());
+      
       g_sConfig.GetService(m_iValue)->customizeTask(getParentTask());
+   }
 
    return true;
 }

@@ -59,6 +59,10 @@ bool GCFS_Service::customizeTask(GCFS_Task* pTask)
    return true;
 }
 
+bool GCFS_Service::decustomizeTask(GCFS_Task* pTask)
+{
+   return true;
+}
 
 GCFS_Service*	GCFS_Service::createService(const char * sModule, const char * sName)
 {

@@ -117,6 +117,9 @@ public:
         virtual ssize_t write(const char* sBuffer, off_t uiOffset, size_t uiSize);
    };
    ExecutableSymlink*                  m_pExecutable;
+
+public:
+   bool                                getSubtasks(std::vector<GCFS_Task*> &vTasks);
 };
 
 class GCFS_TaskManager 
