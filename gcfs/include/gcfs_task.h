@@ -66,7 +66,7 @@ public:
                                        GCFS_Task(GCFS_Directory * pParent);
                                       ~GCFS_Task();
                                       
-   virtual EType                       getType();
+   virtual EType                       getType() const;
    virtual bool                        getPermissions(GCFS_Permissions& sPermissions);
    virtual bool                        setPermissions(GCFS_Permissions& sPermissions);
    

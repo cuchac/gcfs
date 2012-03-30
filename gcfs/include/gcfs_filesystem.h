@@ -26,7 +26,7 @@ public:
       eTypeLink
    } EType;
    
-   virtual EType              getType();
+   virtual EType              getType() const;
    
 public:
    typedef std::map<std::string, GCFS_FileSystem*> FileList;
@@ -79,7 +79,7 @@ public:
    virtual                   ~GCFS_Directory();
    
 public:
-   virtual EType              getType();
+   virtual EType              getType() const;
    
 public:
    virtual const FileList*    getChildren();
@@ -102,7 +102,7 @@ public:
                               GCFS_File(GCFS_Directory * pParent);
     virtual                  ~GCFS_File();
 public:
-   virtual EType              getType();
+   virtual EType              getType() const;
    
 public:
    virtual ssize_t            read(std::string &sBuffer, off_t uiOffset, size_t uiSize);
@@ -127,7 +127,7 @@ public:
                               GCFS_Link(GCFS_Directory * pParent);
 
 public:
-   virtual EType              getType();
+   virtual EType              getType() const;
    
 public:
    virtual ssize_t            read(std::string &sBuffer, off_t uiOffset, size_t uiSize) = 0;

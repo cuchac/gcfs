@@ -101,7 +101,7 @@ GCFS_Task::~GCFS_Task()
       pService->deleteTask(this);
 }
 
-GCFS_FileSystem::EType GCFS_Task::getType()
+GCFS_FileSystem::EType GCFS_Task::getType() const
 {
    return eTypeTask;
 }
@@ -237,6 +237,22 @@ ssize_t GCFS_Task::ExecutableSymlink::write(const char* sBuffer, off_t uiOffset,
    return 0;
 }
 
+bool GCFS_Task::getSubtasks(std::vector< GCFS_Task* >& vTasks)
+{
+   const FileList* mChildren = getChildren();
+   FileList::const_iterator it;
+
+   for(it = mChildren->begin(); it != mChildren->end(); it++)
+      if(it->second->getType() == GCFS_FileSystem::eTypeTask)
+      {
+         GCFS_Task* pTask = (GCFS_Task*)it->second;
+         vTasks.push_back(pTask);
+         pTask->getSubtasks(vTasks);
+      }
+
+   return true;
+}
+
 // Task Manager
 /***************************************************************************/
 GCFS_TaskManager::GCFS_TaskManager():
@@ -276,6 +292,11 @@ GCFS_Task* GCFS_TaskManager::getTask(const char * sName, GCFS_Directory * pParen
 {
    if(!pParent)
       pParent = m_pRootDirectory;
-   
-   return (GCFS_Task*)pParent->getChild(sName);
+
+   const GCFS_FileSystem* pTask = pParent->getChild(sName);
+
+   if(pTask && pTask->getType() == GCFS_FileSystem::eTypeTask)
+      return (GCFS_Task*)pTask;
+   else
+      return NULL;
 }

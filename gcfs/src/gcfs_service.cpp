@@ -54,12 +54,12 @@ bool GCFS_Service::configure(CSimpleIniA& pConfig)
    return true;
 }
 
-bool GCFS_Service::customizeTask(GCFS_Task* pTask)
+bool GCFS_Service::customizeTask(GCFS_Task* pTask, GCFS_ConfigDirectory* pDirectory)
 {
    return true;
 }
 
-bool GCFS_Service::decustomizeTask(GCFS_Task* pTask)
+bool GCFS_Service::decustomizeTask(GCFS_Task* pTask, GCFS_ConfigDirectory* pDirectory)
 {
    return true;
 }

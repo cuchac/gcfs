@@ -20,8 +20,8 @@ public:
    virtual bool               configure(CSimpleIniA& pConfig);
 
    // Hook for service-dependent customization of task
-   virtual bool               customizeTask(GCFS_Task* pTask);
-   virtual bool               decustomizeTask(GCFS_Task* pTask);
+   virtual bool               customizeTask(GCFS_Task* pTask, GCFS_ConfigDirectory * pDirectory);
+   virtual bool               decustomizeTask(GCFS_Task* pTask, GCFS_ConfigDirectory * pDirectory);
 
 public:
    // Factory of modules instances

@@ -49,7 +49,8 @@ ssize_t GCFS_ConfigValue::write(const char* sBuffer, off_t uiOffset, size_t uiSi
 
    std::string sValue = GCFS_Utils::TrimStr(std::string(sBuffer, uiSize));
    
-   SetValue(sValue.c_str(), uiOffset);
+   if(!SetValue(sValue.c_str(), uiOffset))
+      return 0;
 
    // Indicate value is valid
    m_bIsSet = true;
@@ -179,15 +180,15 @@ std::string& GCFS_ConfigString::getString()
 }
 
 /***************************************************************************/
-GCFS_ConfigChoice::GCFS_ConfigChoice(GCFS_Directory * pParent, const char *sDefault, choices_t * pvChoices) :GCFS_ConfigValue(pParent)
+GCFS_ConfigChoice::GCFS_ConfigChoice(GCFS_Directory * pParent, const char *sDefault, choices_t * pvChoices) :
+   GCFS_ConfigValue(pParent),
+   m_iValue(-1)
 {
    if(pvChoices)
       m_vChoices = *pvChoices;
 
    if(sDefault)
       this->SetValue(sDefault);
-   else
-      m_iValue = 0;
 }
 
 bool GCFS_ConfigChoice::SetValue(const char* sValue, size_t iOffset)
@@ -306,8 +307,7 @@ GCFS_ConfigEnvironment::values_t& GCFS_ConfigEnvironment::get()
 GCFS_ConfigService::GCFS_ConfigService(GCFS_Directory * pParent, const char* sDefault, GCFS_ConfigChoice::choices_t* pvChoices)
    :GCFS_ConfigChoice(pParent, sDefault, pvChoices)
 {
-   this->SetValue(sDefault);
-
+   m_iValue = -1;
 }
 
 bool GCFS_ConfigService::SetValue(const char* sValue, size_t iOffset)
@@ -321,10 +321,10 @@ bool GCFS_ConfigService::SetValue(const char* sValue, size_t iOffset)
 
    if(m_iValue >= 0 && iOldValue != m_iValue)
    {
-      if(m_iValue >= 0)
-         g_sConfig.GetService(iOldValue)->decustomizeTask(getParentTask());
-      
-      g_sConfig.GetService(m_iValue)->customizeTask(getParentTask());
+      if(iOldValue >= 0)
+         g_sConfig.GetService(iOldValue)->decustomizeTask(getParentTask(), (GCFS_ConfigDirectory*)getParent());
+
+      g_sConfig.GetService(m_iValue)->customizeTask(getParentTask(), (GCFS_ConfigDirectory*)getParent());
    }
 
    return true;

@@ -27,7 +27,7 @@ GCFS_FileSystem::~GCFS_FileSystem()
       releaseInode();
 }
 
-GCFS_FileSystem::EType GCFS_FileSystem::getType()
+GCFS_FileSystem::EType GCFS_FileSystem::getType() const
 {
    return eTypeVirtualFile;
 }
@@ -178,7 +178,7 @@ GCFS_Directory::~GCFS_Directory()
    m_mFileList.clear();
 }
 
-GCFS_FileSystem::EType GCFS_Directory::getType()
+GCFS_FileSystem::EType GCFS_Directory::getType() const
 {
    return eTypeDirectory;
 }
@@ -278,7 +278,7 @@ GCFS_File::~GCFS_File()
    ::unlink(m_sPath.c_str());
 }
 
-GCFS_FileSystem::EType GCFS_File::getType()
+GCFS_FileSystem::EType GCFS_File::getType() const
 {
    return eTypePhysicalFile;
 }
@@ -341,7 +341,7 @@ GCFS_Link::GCFS_Link(GCFS_Directory* pParent): GCFS_FileSystem(pParent)
    
 }
 
-GCFS_FileSystem::EType GCFS_Link::getType()
+GCFS_FileSystem::EType GCFS_Link::getType() const
 {
    return GCFS_FileSystem::eTypeLink;
 }

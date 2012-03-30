@@ -128,6 +128,9 @@ GCFS_Service* GCFS_Config::AddService(const char * sDriver, const char * sName)
       m_vServices.push_back(tmpService);
       m_vServiceNames.push_back(sName);
       m_mNameToService[sName] = m_vServices.size()-1;
+
+      // Init service to point to itself
+      tmpService->m_sDefaultValues.m_piService->SetValue(sName);
    }
 
    return tmpService;
