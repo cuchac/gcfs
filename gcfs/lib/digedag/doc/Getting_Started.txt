@@ -1,0 +1,44 @@
+
+The history output below shows an exemplary digedag build and test.
+
+-------------------------------------------------------
+[amerzky@gg101 ~]$ h
+     1  6:44  svn co https://svn.cct.lsu.edu/repos/saga-projects/applications/digedag.v2
+     2  6:44  \make install
+
+     3  6:49  cd examples/data
+     4  6:49  ./create_data.pl
+     5  6:55  ln -s /home/amerzky/digedag.v2/examples/data/m101.2mass.1.1.0.000278/data /tmp/0
+     6  6:55  ln -s ~/Montage_v3.2_beta4/bin/ /tmp/0/bin
+
+     7  6:55  cd ../
+     8  6:56  ./dax_parser data/m101.2mass.1.1.0.000278/dag.xml
+        dax_scheduler.local.fork.large.txt
+-------------------------------------------------------
+
+Command (1) and (2) fetch the source tree and build it.  Make requires
+SAGA-C++ to be installed, and SAGA_LOCATION to be set to it's
+installation tree.
+
+Commands (3) and (4) fetch a Montage data set, and create a DAG
+working on that data set. All tat is stored in
+examples/data/m101.2mass.1.1.0.000278 .  (5) and (6) create symbolic
+links from the data directory to /tmp/0, the tests working directory,
+and also link the montage binary directory to /tmp/0/bin.  Those
+locations are what we happen to use in the next step.
+
+Commands (7) and (8) run the previsouly created DAG on the fetched
+data, using the dax_parser example program, and the exemplary
+dax_scheduler.local.fork.large.txt control file (see content for
+details).
+
+Last lines of the (huge) debug ouput should be
+
+-------------------------------------------------------
+    === node run : OUTPUT (void): Running - 5f81f3f2-653f-4e3f-82c9-0ed11f5d7327
+    === scheduler queue watch done
+   dag state is final: Done
+    === 3
+    === dag destructed
+-------------------------------------------------------
+
