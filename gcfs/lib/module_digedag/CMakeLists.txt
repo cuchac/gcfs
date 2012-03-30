@@ -3,7 +3,7 @@ option(GCFS_MODULE_DIGEDAG "Add support for DAG submission using SAGA backend")
 
 if (GCFS_MODULE_DIGEDAG)
 
-   add_library(gcfs_digedag gcfs_servicedigedag.cpp)
+   add_library(gcfs_digedag gcfs_filesystemdigedag.cpp gcfs_servicesagataskdata.cpp gcfs_servicedigedag.cpp)
    
    set(GCFS_DIGEDAG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../digedag/src")
 

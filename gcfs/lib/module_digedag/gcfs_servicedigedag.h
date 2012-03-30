@@ -11,6 +11,10 @@ public:
                               GCFS_ServiceDigedag(const char * sName);
 
 public:
+   virtual bool               customizeTask(GCFS_Task* pTask, GCFS_ConfigDirectory * pDirectory);
+   virtual bool               decustomizeTask(GCFS_Task* pTask, GCFS_ConfigDirectory * pDirectory);
+
+public:
    // Public module API for task submission
    virtual bool               submitTask(GCFS_Task* pTask);
    virtual bool               waitForTask(GCFS_Task* pTask);

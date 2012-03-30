@@ -1,6 +1,8 @@
 #include <digedag.hpp>
 
 #include "gcfs_servicedigedag.h"
+#include "gcfs_servicesagataskdata.h"
+#include "gcfs_filesystemdigedag.h"
 #include "gcfs_config.h"
 #include <gcfs_utils.h>
 #include <fcntl.h>
@@ -10,46 +12,80 @@ GCFS_ServiceDigedag::GCFS_ServiceDigedag(const char* sName): GCFS_ServiceSaga(sN
 
 }
 
+bool GCFS_ServiceDigedag::customizeTask(GCFS_Task* pTask, GCFS_ConfigDirectory* pDirectory)
+{
+   if(pDirectory)
+      pDirectory->addChild(new GCFS_ConfigDependsOn(pDirectory), "depends_on");
+   
+   return true;
+}
+
+bool GCFS_ServiceDigedag::decustomizeTask(GCFS_Task* pTask, GCFS_ConfigDirectory* pDirectory)
+{
+   if(pDirectory)
+      pDirectory->removeChild("depends_on");
+
+   return true;
+}
+
 // Public module API for task submission
 bool GCFS_ServiceDigedag::submitTask(GCFS_Task* pTask)
 {
-   GCFS_Task* pTask1 = g_sTaskManager.getTask("Test");
-   GCFS_Task* pTask2 = g_sTaskManager.getTask("Test2");
-   
+   // Collect all the subtasks
+   std::vector<GCFS_Task*> vTasks;
+   std::vector< GCFS_Task* >::iterator it;
+   vTasks.push_back(pTask);
+
+   pTask->getSubtasks(vTasks);
+
    // create a new and empty DAG instance
-   boost::shared_ptr <digedag::dag> d (new digedag::dag);
-   
-   // Prepare tasks
-   digedag::node_description nd1;
-   digedag::node_description nd2;
+   boost::shared_ptr <digedag::dag> pDag (new digedag::dag);
 
-   setDescription(pTask1, nd1);
-   setDescription(pTask2, nd2);
+   // Create task data structure
+   GCFS_ServiceSagaTaskData * pTaskData = new GCFS_ServiceSagaTaskData;
 
-   prepareJobDir(pTask1);
-   prepareJobDir(pTask2);
+   for(it = vTasks.begin(); it != vTasks.end(); it++)
+   {
+      // Prepare tasks
+      digedag::node_description sDescription;
 
-   boost::shared_ptr <digedag::node> n1 = d->create_node (nd1);
-   boost::shared_ptr <digedag::node> n2 = d->create_node (nd2);
+      setDescription(*it, sDescription);
+
+      prepareJobDir(*it);
+
+      boost::shared_ptr <digedag::node> pNode = pDag->create_node(sDescription);
+      pTaskData->m_mTasks[*it] = pNode;
+
+      // add node to the dag, with identifier
+      pDag->add_node((*it)->getName(), pNode);
+   }
    
-   // add two nodes to the dag, with identifiers
-   d->add_node ("node_1", n1);
-   d->add_node ("node_2", n2);
-   
-   // specify data to be transfered between the two nodes.
-   // Again, the dag instance serves as an edge factory.
-   boost::shared_ptr <digedag::edge> e1 = d->create_edge (getSubmitDir(pTask1), getSubmitDir(pTask2)+"/task1");
-   
-   // add that edge to the DAG
-   d->add_edge (e1, n1, n2);
+   for(it = vTasks.begin(); it != vTasks.end(); it++)
+   {
+      GCFS_ConfigDependsOn* pDependsOn = (GCFS_ConfigDependsOn*)(*it)->getConfigValue("depends_on");
+      if(pDependsOn)
+      {
+         std::vector< GCFS_Task* > vDependsOnTasks = pDependsOn->get();
+         std::vector< GCFS_Task* >::iterator itDep;
+         
+         for(itDep = vDependsOnTasks.begin(); itDep != vDependsOnTasks.end(); itDep++)
+         {
+            // specify data to be transfered between the two nodes.
+            boost::shared_ptr <digedag::edge> pEdge = pDag->create_edge(getSubmitDir(*itDep), getSubmitDir(*it)+"/"+(*itDep)->getName());
+
+            // add that edge to the DAG
+            pDag->add_edge (pEdge, pTaskData->m_mTasks[*itDep], pTaskData->m_mTasks[*it]);
+         }
+      }
+   }
    
    // the abstract DAG is complete, and can bew explicitely
    // translated into a concrete DAG.  This step is optional
    // though, and is implictely peformed on fire() if not
    // called previously.  See infos about the Scheduler below.
-   d->schedule ();
+   pDag->schedule ();
 
-   d->dump();
+   pDag->dump();
 
    // Start Submission
    // If running under root, change credentials to submiting user
@@ -60,24 +96,12 @@ bool GCFS_ServiceDigedag::submitTask(GCFS_Task* pTask)
    }
    
    // the (abstract or concrete) DAG is ready, and can be run
-   d->fire ();
-
-   // Grant access to submitting process (for Condor)
-   GCFS_Utils::chmodRecursive(getSubmitDir(pTask1).c_str(), 0777);
-   GCFS_Utils::chmodRecursive(getSubmitDir(pTask2).c_str(), 0777);
-   GCFS_Utils::chmodRecursive(g_sConfig.m_sDataDir.c_str(), 0777);
+   pDag->fire ();
    
    std::cout << "dag    running..." << std::endl;
    
    // wait 'til the dag had a chance to finish
-   while ( digedag::Running == d->get_state () )
-   {
-      ::sleep (1);
-      std::cout << "dag    waiting..." << std::endl;
-   }
-
-   // this is the same as the loop above
-   d->wait ();
+   pDag->wait();
 
    // Return back to root
    if(g_sConfig.m_sPermissions.m_iUid == 0 || g_sConfig.m_sPermissions.m_iGid == 0)
@@ -85,6 +109,15 @@ bool GCFS_ServiceDigedag::submitTask(GCFS_Task* pTask)
       // Return back permissions
       setresgid(0, 0, 0);
       setresuid(0, 0, 0);
+   }
+
+   for(it = vTasks.begin(); it != vTasks.end(); it++)
+   {
+      digedag::state taskState = pTaskData->m_mTasks[*it]->get_state();
+      if(taskState == digedag::Done)
+         finishTask(*it);
+      else
+         finishTask(*it, "Execution failed.");
    }
    
    return true;
