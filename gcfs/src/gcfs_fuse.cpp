@@ -327,7 +327,7 @@ static void gcfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode
    sPermissions.m_iGid = pContext->gid;
    sPermissions.m_iUid = pContext->uid;
    
-   if(pFile && (pDirectory = pFile->mkdir(name, &sPermissions)) != NULL)
+   if(pFile && (pDirectory = pFile->mkdir(name, sPermissions)) != NULL)
    {
       struct fuse_entry_param e = {0};
 

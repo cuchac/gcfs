@@ -60,12 +60,19 @@ GCFS_RootDirectory::GCFS_RootDirectory(GCFS_Directory* pParent): GCFS_Directory(
    allocInode();
 }
 
-GCFS_Directory* GCFS_RootDirectory::mkdir(const char* sName, GCFS_Permissions* pPerm)
+GCFS_Directory* GCFS_RootDirectory::mkdir(const char* sName, const GCFS_Permissions& pPerm)
 {
+   // Check if task of such name already exists
+   if(g_sTaskManager.getTask(sName, this, true))
+      return false;
+
+   // Create task and initialize
    GCFS_Task* pTask = new GCFS_Task(this);
-   pTask->m_sPermissions = *pPerm;
-   
+   pTask->m_sPermissions = pPerm;
+
+   // Register new task in directory and task manager
    this->addChild(pTask, sName);
+   g_sTaskManager.registerTask(pTask);
    
    return pTask;
 }
@@ -99,6 +106,8 @@ GCFS_Task::~GCFS_Task()
 
    if (pService)
       pService->deleteTask(this);
+
+   g_sTaskManager.unregisterTask(this);
 }
 
 GCFS_FileSystem::EType GCFS_Task::getType() const
@@ -271,32 +280,54 @@ void GCFS_TaskManager::Init()
    m_pRootDirectory = new GCFS_RootDirectory(NULL);
 }
 
-
-GCFS_Task* GCFS_TaskManager::addTask(const char * sName, GCFS_Directory * pParent)
+GCFS_Task* GCFS_TaskManager::registerTask(GCFS_Task * pTask)
 {
-   if(!pParent)
-      pParent = m_pRootDirectory;
+   GCFS_Directory* pTopTask = pTask->getTopmostDirectory();
 
-   return (GCFS_Task*)pParent->mkdir(sName, &g_sConfig.m_sPermissions);
+   m_mSubtasks[pTopTask][pTask->getName()] = pTask;
+   
+   return pTask;
 }
 
-bool GCFS_TaskManager::deleteTask(const char * sName, GCFS_Directory * pParent)
+bool GCFS_TaskManager::unregisterTask(GCFS_Task * pTask)
 {
-   if(!pParent)
-      pParent = m_pRootDirectory;
+   GCFS_Directory* pTopTask = pTask->getTopmostDirectory();
 
-   return pParent->unlink(sName);
+   std::map< GCFS_Directory*, std::map< std::string, GCFS_Task* > >::iterator it = m_mSubtasks.find(pTopTask);
+   if(it != m_mSubtasks.end())
+   {
+      std::map< std::string, GCFS_Task* >::iterator itTask = it->second.find(pTask->getName());
+      if(itTask != it->second.end())
+         it->second.erase(itTask);
+   }
+
+   return true;
 }
 
-GCFS_Task* GCFS_TaskManager::getTask(const char * sName, GCFS_Directory * pParent)
+GCFS_Task* GCFS_TaskManager::getTask(const char * sName, GCFS_Directory * pParent, bool bRecursive)
 {
    if(!pParent)
       pParent = m_pRootDirectory;
 
-   const GCFS_FileSystem* pTask = pParent->getChild(sName);
-
-   if(pTask && pTask->getType() == GCFS_FileSystem::eTypeTask)
-      return (GCFS_Task*)pTask;
-   else
+   if(bRecursive)
+   {
+      pParent = pParent->getTopmostDirectory();
+      std::map< GCFS_Directory*, std::map< std::string, GCFS_Task* > >::iterator it = m_mSubtasks.find(pParent);
+      if(it != m_mSubtasks.end())
+      {
+         std::map< std::string, GCFS_Task* >::iterator itTask = it->second.find(sName);
+         if(itTask != it->second.end())
+            return itTask->second;
+      }
       return NULL;
+   }
+   else
+   {
+      const GCFS_FileSystem* pTask = pParent->getChild(sName);
+
+      if(pTask && pTask->getType() == GCFS_FileSystem::eTypeTask)
+         return (GCFS_Task*)pTask;
+      else
+         return NULL;
+   }
 }

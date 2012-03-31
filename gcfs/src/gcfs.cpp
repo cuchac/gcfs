@@ -18,8 +18,8 @@ int main(int argc, char *argv[]){
 
 	GCFS_Permissions sDefPerm = {0755, getuid(), getgid()};
    g_sTaskManager.Init();
-	g_sTaskManager.addTask("Test")->m_sPermissions = sDefPerm;
-	g_sTaskManager.addTask("Test2")->m_sPermissions = sDefPerm;
+   g_sTaskManager.m_pRootDirectory->mkdir("Test", sDefPerm);
+   g_sTaskManager.m_pRootDirectory->mkdir("Test2", sDefPerm);
 
 	return init_fuse(argc, argv);
 }

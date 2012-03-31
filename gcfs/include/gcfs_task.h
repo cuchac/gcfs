@@ -43,7 +43,7 @@ public:
                                        GCFS_RootDirectory(GCFS_Directory* pParent);
 
 public:
-    virtual GCFS_Directory*            mkdir(const char* name, GCFS_Permissions* pPerm);
+    virtual GCFS_Directory*            mkdir(const char* sName, const GCFS_Permissions& pPerm);
 };
 
 // Task Configuration
@@ -136,10 +136,13 @@ public:
    
 // Manage tasks
 public:
-   GCFS_Task*                          addTask(const char* sName, GCFS_Directory* pParent = NULL);
-   bool                                deleteTask(const char* sName, GCFS_Directory* pParent = NULL);
+   GCFS_Task*                          registerTask(GCFS_Task* pTask);
+   bool                                unregisterTask(GCFS_Task* pTask);
 
-   GCFS_Task*                          getTask(const char* sName, GCFS_Directory* pParent = NULL);
+   GCFS_Task*                          getTask(const char* sName, GCFS_Directory* pParent = 0, bool bRecursive = false);
+
+private:
+   std::map<GCFS_Directory*, std::map<std::string, GCFS_Task*> > m_mSubtasks;
 };
 
 #endif // GCFS_TASK_H

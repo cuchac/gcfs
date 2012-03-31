@@ -65,7 +65,7 @@ bool GCFS_FileSystem::unlink(const char* sName)
    return false;
 }
 
-GCFS_Directory* GCFS_FileSystem::mkdir(const char* name, GCFS_Permissions* pPerm)
+GCFS_Directory* GCFS_FileSystem::mkdir(const char* name, const GCFS_Permissions& pPerm)
 {
    return false;
 }
@@ -107,6 +107,19 @@ GCFS_Task* GCFS_FileSystem::getParentTask()
       pParent = pParent->getParent();
    
    return (GCFS_Task *)pParent;
+}
+
+GCFS_Directory* GCFS_FileSystem::getTopmostDirectory()
+{
+   GCFS_Directory *pLastTask = NULL, *pParent = m_pParent;
+   
+   while(pParent)
+   {
+      pLastTask = pParent;
+      pParent = pParent->getParent();
+   }
+
+   return pLastTask;
 }
 
 GCFS_Directory* GCFS_FileSystem::getParent()
@@ -208,9 +221,9 @@ bool GCFS_Directory::removeChild(const char* sName, bool bDelete)
    
    if(pChild)
    {
-      m_mFileList.erase(sName);
       if(bDelete)
          delete pChild;
+      m_mFileList.erase(sName);
       return true;
    }
    
@@ -245,7 +258,7 @@ GCFS_FileSystem* GCFS_Directory::create(const char* sName, GCFS_FileSystem::ETyp
    return NULL;
 }
 
-GCFS_Directory* GCFS_Directory::mkdir(const char* name, GCFS_Permissions* pPerm)
+GCFS_Directory* GCFS_Directory::mkdir(const char* name, const GCFS_Permissions& pPerm)
 {
    GCFS_Directory * pNewDir = new GCFS_Directory(this);
    

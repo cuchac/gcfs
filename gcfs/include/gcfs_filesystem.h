@@ -39,7 +39,7 @@ public:
    virtual GCFS_FileSystem*   create(const char * sName, EType eType);
    virtual bool               close();
    virtual bool               unlink(const char * sName);
-   virtual GCFS_Directory*    mkdir(const char *name, GCFS_Permissions* pPerm);
+   virtual GCFS_Directory*    mkdir(const char *name, const GCFS_Permissions &pPerm);
    
    virtual off_t              getSize();
    virtual bool               getPermissions(GCFS_Permissions &sPermissions);
@@ -49,6 +49,7 @@ public:
    
 public:
    virtual GCFS_Task*         getParentTask();
+   virtual GCFS_Directory*    getTopmostDirectory();
    virtual GCFS_Directory*    getParent();
    virtual const char*        getName();
    virtual ino_t              getInode() const;
@@ -88,7 +89,7 @@ public:
    bool                       removeChild(const char* sName, bool bDelete = true);
    
    virtual GCFS_FileSystem*   create(const char* sName, EType eType);
-   virtual GCFS_Directory*    mkdir(const char* name, GCFS_Permissions* pPerm);
+   virtual GCFS_Directory*    mkdir(const char* name, const GCFS_Permissions& pPerm);
    virtual bool               unlink(const char * sName);
    
 private:
