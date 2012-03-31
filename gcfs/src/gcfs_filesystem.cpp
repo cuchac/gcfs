@@ -111,9 +111,9 @@ GCFS_Task* GCFS_FileSystem::getParentTask()
 
 GCFS_Directory* GCFS_FileSystem::getTopmostDirectory()
 {
-   GCFS_Directory *pLastTask = NULL, *pParent = m_pParent;
+   GCFS_Directory *pLastTask = (GCFS_Directory*)this, *pParent = m_pParent;
    
-   while(pParent)
+   while(pParent && pParent->getParent())
    {
       pLastTask = pParent;
       pParent = pParent->getParent();
