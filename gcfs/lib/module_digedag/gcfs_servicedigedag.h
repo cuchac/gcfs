@@ -18,6 +18,7 @@ public:
    // Public module API for task submission
    virtual bool               submitTask(GCFS_Task* pTask);
    virtual bool               waitForTask(GCFS_Task* pTask);
+   virtual bool               deleteTask(GCFS_Task* pTask);
 
 protected:
    virtual bool               setDescription(GCFS_Task* pTask, saga::job::description& pDesc);

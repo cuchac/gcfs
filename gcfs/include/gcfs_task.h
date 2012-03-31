@@ -139,10 +139,12 @@ public:
    GCFS_Task*                          registerTask(GCFS_Task* pTask);
    bool                                unregisterTask(GCFS_Task* pTask);
 
+   typedef std::map<std::string, GCFS_Task*> TaskList;
    GCFS_Task*                          getTask(const char* sName, GCFS_Directory* pParent = 0, bool bRecursive = false);
+   const TaskList &                    getSubtasks(GCFS_Task* pTask);
 
 private:
-   std::map<GCFS_Directory*, std::map<std::string, GCFS_Task*> > m_mSubtasks;
+   std::map<GCFS_Directory*,  TaskList> m_mSubtasks;
 };
 
 #endif // GCFS_TASK_H

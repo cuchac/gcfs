@@ -20,3 +20,15 @@ bool GCFS_ConfigDependsOn::getValueFromString(const char* sString, GCFS_Task*& p
    
    return pValue != NULL;
 }
+
+bool GCFS_ConfigDependsOn::removeTask(GCFS_Task* pTask)
+{
+   std::vector< GCFS_Task* >::iterator itDepend;
+   for(itDepend = m_vValues.begin(); itDepend != m_vValues.end();)
+      if(*itDepend == pTask)
+         itDepend = m_vValues.erase(itDepend);
+      else
+         itDepend++;
+
+   return true;
+}

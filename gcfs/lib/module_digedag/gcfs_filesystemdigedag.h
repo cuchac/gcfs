@@ -86,6 +86,9 @@ public:
 protected:
    virtual const char *       getStringFromValue(GCFS_Task*& sValue);
    virtual bool               getValueFromString(const char* sString, GCFS_Task* &pValue);
+
+public:
+   bool                       removeTask(GCFS_Task * pTask);
 };
 
 #endif // GCFS_CONFIGDEPENDSON_H

@@ -331,3 +331,15 @@ GCFS_Task* GCFS_TaskManager::getTask(const char * sName, GCFS_Directory * pParen
          return NULL;
    }
 }
+
+const GCFS_TaskManager::TaskList& GCFS_TaskManager::getSubtasks(GCFS_Task* pTask)
+{
+   GCFS_Directory* pParent = pTask->getTopmostDirectory();
+
+   std::map< GCFS_Directory*, std::map< std::string, GCFS_Task* > >::iterator it = m_mSubtasks.find(pParent);
+   if(it != m_mSubtasks.end())
+      return it->second;
+
+   static GCFS_TaskManager::TaskList empty;
+   return empty;
+}

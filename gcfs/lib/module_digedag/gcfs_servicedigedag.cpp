@@ -128,6 +128,21 @@ bool GCFS_ServiceDigedag::waitForTask(GCFS_Task* pTask)
    return true;
 }
 
+bool GCFS_ServiceDigedag::deleteTask(GCFS_Task* pTask)
+{
+   const GCFS_TaskManager::TaskList &mTasks = g_sTaskManager.getSubtasks(pTask);
+
+   std::map< std::string, GCFS_Task* >::const_iterator it;
+   for(it = mTasks.begin(); it != mTasks.end(); it++)
+   {
+      GCFS_ConfigValue* pValue = it->second->getConfigValue("depends_on");
+      if(pValue)
+         ((GCFS_ConfigDependsOn*)pValue)->removeTask(pTask);
+   }
+   
+   return GCFS_ServiceSaga::deleteTask(pTask);
+}
+
 const std::string GCFS_ServiceDigedag::getTaskId(GCFS_Task* pTask)
 {
    return "";
