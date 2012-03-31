@@ -13,7 +13,10 @@ const char* GCFS_ConfigDependsOn::getStringFromValue(GCFS_Task*& sValue)
 
 bool GCFS_ConfigDependsOn::getValueFromString(const char* sString, GCFS_Task*& pValue)
 {
-   pValue = g_sTaskManager.getTask(sString);
+   pValue = g_sTaskManager.getTask(sString, getParent(), true);
+
+   if(pValue == getParentTask())
+      return NULL;
    
    return pValue != NULL;
 }
