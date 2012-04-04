@@ -56,6 +56,7 @@ if (SAGA_INCLUDE_DIR)
     string(REGEX REPLACE ".*#define[ \t]+SAGA_VERSION_MAJOR[ \t]+([0-9]+).*" "\\1" SAGA_VERSION_MAJOR "${SAGA_COMMON_H_FILE}")
     string(REGEX REPLACE ".*#define[ \t]+SAGA_VERSION_MINOR[ \t]+([0-9]+).*" "\\1" SAGA_VERSION_MINOR "${SAGA_COMMON_H_FILE}")
 
+    set(SAGA_LOCATION ${SAGA_INCLUDE_DIR}/../)
     set(SAGA_INCLUDE_DIR ${SAGA_INCLUDE_DIR}/saga/ ${SAGA_INCLUDE_DIR}/)
 
     # search for library
@@ -70,15 +71,16 @@ if (SAGA_INCLUDE_DIR)
                  ENV SAGA_ROOTDIR
                  PATH_SUFFIXES "lib")
 	 
-	find_library(SAGA_LIBRARIES_JOB
+    find_library(SAGA_LIBRARIES_JOB
                  NAMES "libsaga_package_job.so"
                        "libsaga_package_job.dylib"
                  PATHS "/usr/local"
                        "/usr"
                  ENV SAGA_ROOTDIR
                  PATH_SUFFIXES "lib")
-	
-	SET(SAGA_LIBRARIES ${SAGA_LIBRARIES_CORE} ${SAGA_LIBRARIES_JOB})
+
+    GET_FILENAME_COMPONENT(SAGA_LIBRARIES_DIR ${SAGA_LIBRARIES_CORE} PATH)	
+    SET(SAGA_LIBRARIES ${SAGA_LIBRARIES_CORE} ${SAGA_LIBRARIES_JOB})
 
 endif (SAGA_INCLUDE_DIR)
 
