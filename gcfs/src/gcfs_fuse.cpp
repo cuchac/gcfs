@@ -228,6 +228,8 @@ static void gcfs_close(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi
 {
    if(fi->fh)
       ((GCFS_FileSystem *)fi->fh)->close();
+
+   fuse_reply_err(req, 0);
 }
 
 static void gcfs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
@@ -261,7 +263,7 @@ static void gcfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t s
       fi->direct_io = 1;
 
       size = pFile->write(buf, off, size);
-      
+
       if(size)
          fuse_reply_write(req, size);
       else
