@@ -47,7 +47,7 @@ ssize_t GCFS_ConfigValue::write(const char* sBuffer, off_t uiOffset, size_t uiSi
       copyValue(pValue);
    }
 
-   std::string sValue = GCFS_Utils::TrimStr(std::string(sBuffer, uiSize));
+   std::string sValue = GCFS_Utils::TrimStr(uiSize > 0 ? std::string(sBuffer, uiSize) : std::string(sBuffer));
    
    if(!SetValue(sValue.c_str(), uiOffset))
       return 0;
@@ -58,7 +58,7 @@ ssize_t GCFS_ConfigValue::write(const char* sBuffer, off_t uiOffset, size_t uiSi
    // Update config file size
    m_iSize = sValue.length();
    
-   return uiSize;
+   return m_iSize;
 }
 
 bool GCFS_ConfigValue::getPermissions(GCFS_Permissions& sPermissions)

@@ -123,7 +123,8 @@ ssize_t GCFS_ControlControl::write(const char* sBuffer, off_t uiOffset, size_t u
       if(it->second)
       {
          // It is assignment
-         pTask->getConfigValue(it->first)->SetValue(it->second);
+         if(pTask->getConfigValue(it->first)->write(it->second, 0, 0) <= 0)
+            return false;
       }
       else
       {

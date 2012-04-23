@@ -141,6 +141,7 @@ bool GCFS_Utils::ParseConfigString(char * string, GCFS_Utils::keyValueArray_t& v
    
    // Parse all the commands/assignments
    char * pPos = NULL;
+   // TODO: Write own tokenizer to allow escaping and quotes to avoid splitting
    char * pToken = strtok_r(string, GCFS_CONFIG_DELIMITERS, &pPos);
    
    while(pToken != NULL)
