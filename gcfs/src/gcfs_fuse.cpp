@@ -55,6 +55,7 @@ static int gcfs_stat(fuse_ino_t ino, struct stat *stbuf)
             break;
          default:
             stbuf->st_mode = S_IFREG;
+            stbuf->st_size = pFile->getSize();
             break;
       }
 

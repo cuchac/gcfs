@@ -22,6 +22,7 @@ public:
     virtual ssize_t           write(const char* sBuffer, off_t uiOffset, size_t uiSize);
     virtual bool              getPermissions(GCFS_Permissions& sPermissions);
     virtual bool              copyValue(GCFS_ConfigValue* pFrom);
+    virtual off_t             getSize();
     
 public:
    virtual  bool              SetValue(const char * sValue, size_t iOffset = 0) = 0;
