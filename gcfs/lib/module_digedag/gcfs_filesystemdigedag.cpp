@@ -3,7 +3,7 @@
 
 GCFS_ConfigDependsOn::GCFS_ConfigDependsOn(GCFS_Directory* pParent): GCFS_ConfigArray<GCFS_Task*>(pParent)
 {
-
+   m_bIsSet = true;
 }
 
 const char* GCFS_ConfigDependsOn::getStringFromValue(GCFS_Task*& sValue)
