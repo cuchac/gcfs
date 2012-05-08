@@ -9,34 +9,34 @@ if len(sys.argv) < 2:
    print("Insufficient number of parameters!")
    exit(-1)
    
-size = sys.argv[1]
-phase = int(sys.argv[2])
+phase = int(sys.argv[1])
 
 if phase == 1:
    # Generate base and N matrixes
-   mat = np.load('input.bin')
+   mat = np.load(sys.argv[2])
 
-   mat[:,:-1].dump('output_{}.bin'.format(size))
+   mat[:,:-1].dump('matrix_{:05d}.bin'.format(0))
 
-   for i in range(size):
-      np.hstack((mat[:,:i], mat[:,-1], mat[:,i+1:-1])).dump('output_{}.bin'.format(i))
-      print(np.hstack((mat[:,:i], mat[:,-1], mat[:,i+1:-1])))
+   for i in range(mat.shape[0]):
+      np.hstack((mat[:,:i], mat[:,-1], mat[:,i+1:-1])).dump('matrix_{:05d}.bin'.format(i+1))
+      print("Matrix: ", i, "\n", np.hstack((mat[:,:i], mat[:,-1], mat[:,i+1:-1])))
       
 elif phase == 2:
    # Calculate determinant
-   id = sys.argv[3]
+   inputMatrix = sys.argv[2]
 
-   np.linalg.det(np.load('start/output_{}.bin'.format(id))).dump('det.bin'.format(id))
-   print("determinant {}".format(np.linalg.det(np.load('start/output_{}.bin'.format(id)))))
+   np.linalg.det(np.load(inputMatrix)).dump('det_{}'.format(os.path.basename(inputMatrix)))
+   print("determinant {}".format(np.linalg.det(np.load(inputMatrix))))
    
 elif phase == 3: 
    # Collect determinants
+   size = len(sys.argv)-3;
    result = np.empty((size, 1), dtype='float32')
    
-   baseDet = np.load('work_{}/det.bin'.format(size))
+   baseDet = np.load(sys.argv[2])
    
    for i in range(size):
-      result[i,0] = np.load('work_{}/det.bin'.format(i))
+      result[i,0] = np.load(sys.argv[i+3])
    
    result = result / baseDet
    
