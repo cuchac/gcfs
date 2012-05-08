@@ -12,9 +12,6 @@ int main(int argc, char *argv[]){
 
 	if(!g_sConfig.loadConfig())
 		return -1;
-	
-	g_sConfig.AddService("condor", "test");
-	g_sConfig.AddService("saga", "saga");
 
 	GCFS_Permissions sDefPerm = {0755, getuid(), getgid()};
    g_sTaskManager.Init();

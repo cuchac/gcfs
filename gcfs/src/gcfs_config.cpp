@@ -20,6 +20,7 @@ bool GCFS_Config::loadConfig()
 {
    CSimpleIniA ini;
    ini.SetUnicode();
+   ini.SetMultiKey();
 
    std::string sConfigPath;
 
