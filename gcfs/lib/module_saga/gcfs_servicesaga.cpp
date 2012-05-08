@@ -14,12 +14,14 @@
 namespace sa  = saga::attributes;
 namespace sja = saga::job::attributes;
 
-GCFS_ServiceSaga::GCFS_ServiceSaga(const char* sName): GCFS_Service(sName)
+GCFS_ServiceSaga::GCFS_ServiceSaga(const char* sName):GCFS_Service(sName), m_pService(NULL)
 {
 }
 
 GCFS_ServiceSaga::~GCFS_ServiceSaga()
 {
+   if(m_pService)
+      delete m_pService;
 }
 
 bool GCFS_ServiceSaga::configure(CSimpleIniA& pConfig)
@@ -33,6 +35,8 @@ bool GCFS_ServiceSaga::configure(CSimpleIniA& pConfig)
       return false;
    }
    m_sServiceUrl = it->second;
+   
+   m_pService = new saga::job::service(saga::url(m_sServiceUrl));
 
    return GCFS_Service::configure(pConfig);
 }
@@ -67,9 +71,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
 
    try
    {
-      pTaskData->m_sService = saga::job::service(saga::url(m_sServiceUrl));
-
-      pTaskData->m_sJob = pTaskData->m_sService.create_job(sJobDescription);
+      pTaskData->m_sJob = m_pService->create_job(sJobDescription);
 
       pTaskData->m_sJob.add_callback(saga::job::metrics::state, boost::bind(&SagaCallback::callbackStatus, pTaskData->m_sCallback, _1, _2, _3));
 

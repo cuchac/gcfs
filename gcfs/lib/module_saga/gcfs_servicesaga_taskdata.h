@@ -25,7 +25,6 @@ private:
 
 class SagaTaskData {
 public:
-	saga::job::service 	m_sService;
 	saga::job::job 		m_sJob;
 	SagaCallback			m_sCallback;
 };

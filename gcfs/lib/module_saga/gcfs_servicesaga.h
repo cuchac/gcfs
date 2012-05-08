@@ -37,6 +37,7 @@ protected:
 // Config values
 protected:
    std::string                m_sServiceUrl;
+   saga::job::service        *m_pService;
 };
 
 #endif // GCFS_SERVICESAGA_H
