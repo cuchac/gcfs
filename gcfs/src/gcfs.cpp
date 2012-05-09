@@ -8,8 +8,8 @@
 GCFS_Config g_sConfig;
 GCFS_TaskManager g_sTaskManager;
 
-int main(int argc, char *argv[]){
-
+int main(int argc, char *argv[])
+{
 	if(!g_sConfig.loadConfig())
 		return -1;
 

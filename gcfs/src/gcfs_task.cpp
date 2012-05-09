@@ -272,7 +272,8 @@ GCFS_TaskManager::GCFS_TaskManager():
 
 GCFS_TaskManager::~GCFS_TaskManager()
 {
-
+   if(m_pRootDirectory)
+      delete m_pRootDirectory;
 }
 
 void GCFS_TaskManager::Init()

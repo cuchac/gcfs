@@ -54,8 +54,10 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
    if(!setDescription(pTask, sJobDescription))
       return false;
 
+   sJobDescription.set_attribute(sja::description_working_directory, sSubmitDir);
+
    // Go to submission directory - did not find any other way to set submission dir. Chdir subject to race conditions?
-   chdir(sSubmitDir.c_str());
+   //chdir(sSubmitDir.c_str());
 
    SagaTaskData * pTaskData = new SagaTaskData();
    pTaskData->m_sCallback.setTask(pTask);
@@ -81,7 +83,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
    catch(std::exception& e)
    {
       // Run back to previous working dir
-      chdir(g_sConfig.m_sDataDir.c_str());
+      //chdir(g_sConfig.m_sDataDir.c_str());
 
       return finishTask(pTask, e.what());
    }
@@ -95,7 +97,7 @@ bool GCFS_ServiceSaga::submitTask(GCFS_Task* pTask)
    }
 
    // Run back to previous working dir
-   chdir(g_sConfig.m_sDataDir.c_str());
+   //chdir(g_sConfig.m_sDataDir.c_str());
 
    // Grant access to submitting process (for Condor)
    GCFS_Utils::chmodRecursive(sSubmitDir.c_str(), 0777);

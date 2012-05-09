@@ -53,6 +53,12 @@ bool GCFS_Config::loadConfig()
       //GCFS_Utils::rmdirRecursive(m_sDataDir.c_str()); // Too dangerous to delete whole dir
       GCFS_Utils::mkdirRecursive(m_sDataDir.c_str());
 
+		if(chdir(m_sDataDir.c_str()) != 0)
+		{
+         printf("Cannot 'chdir' to data directory!\nExiting now.\n");
+         return false;
+      }
+
       for(it = pSectionValues->begin(); it != pSectionValues->end(); ++it)
       {
          if(strcmp(it->first.pItem, "service") != 0)
