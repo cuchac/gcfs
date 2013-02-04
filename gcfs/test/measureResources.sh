@@ -51,9 +51,9 @@ do
 	START_CPU_TIME=$CPU_TIME
 
 	echo "$(divide $TIME 1000000000) 		$(divide $CPU_TIME_DIFF 1000000) 		$MEMORY" >> $LOG
-	echo "$(divide $TIME 1000000000) 		$(divide $CPU_TIME_DIFF 1000000) 		$MEMORY"
+	echo "$(divide $TIME 1000000000) 		$(divide $CPU_TIME_DIFF 1000000) 		$MEMORY		"$(ps -eo rss,cgroup | grep "cpuacct:"$CGROUP | wc -l)
 
-	sleep 1
+	sleep 0.1
 done;
 
 

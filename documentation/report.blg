@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99c (Web2C 7.5.7)
+The top-level auxiliary file: report.aux
+The style file: plainnat.bst
+Database file #1: bibliography.bib
+Warning--entry type for "condor" isn't style-file defined
+--line 1 of file bibliography.bib
+You've used 1 entry,
+            2767 wiz_defined-function locations,
+            597 strings with 4905 characters,
+and the built_in function-call counts, 322 in all, are:
+= -- 26
+> -- 10
+< -- 1
++ -- 4
+- -- 3
+* -- 15
+:= -- 55
+add.period$ -- 3
+call.type$ -- 1
+change.case$ -- 3
+chr.to.int$ -- 1
+cite$ -- 2
+duplicate$ -- 14
+empty$ -- 32
+format.name$ -- 4
+if$ -- 64
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 0
+newline$ -- 13
+num.names$ -- 4
+pop$ -- 12
+preamble$ -- 1
+purify$ -- 2
+quote$ -- 0
+skip$ -- 14
+stack$ -- 0
+substring$ -- 2
+swap$ -- 1
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 11
+warning$ -- 0
+while$ -- 3
+width$ -- 0
+write$ -- 19
+(There was 1 warning)

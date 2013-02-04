@@ -15,8 +15,8 @@ breaklinks=true,
 urlcolor=red,
 citecolor=blue,
 linkcolor=blue,
-unicode=true,
-pdftex]{hyperref}
+unicode=true]{hyperref}
+\usepackage[square, numbers]{natbib}
 
 \newcommand{\term}[1]{``#1''}
 \newcommand{\code}[1]{\textit{#1}}
@@ -118,51 +118,53 @@ Example creates cluster job called \code{test} and submits it to  service \code{
 
 \begin{figure*}
   \begin{verbatim}
+# Current directory is root directory of filesystem
+
 # Creating job 'test'
-mkdir ./gcfs/test
+mkdir ./test
 
 # Using Condor service ...
-echo "Condor" > ./gcfs/test/config/service
+echo "Condor" > ./test/config/service
 
 # Job status:
-cat ./gcfs/test/status
+cat ./test/status
 # output: 0	new
 
 # Copying /bin/cp as binary executable
-cp /bin/cp ./gcfs/test/data/executable
+cp /bin/cp ./test/data/executable
 
 # Creating data file 'fileIn' with some content
-echo "sample data file" > ./gcfs/test/data/fileIn
+echo "sample data file" > ./test/data/fileIn
 
 # Setting argument to '-v fileIn fileOut_$(process)' - copy verbosely file 'fileIn'
-echo '-v fileIn fileOut_$(process)' > ./gcfs/test/config/arguments
+echo '-v fileIn fileOut_$(process)' > ./test/config/arguments
 
 # Setting output file to '$(process)'
-echo 'output_$(process)' > ./gcfs/test/config/output_file
+echo 'output_$(process)' > ./test/config/output_file
 
 # Setting to use 2 processes - cluster job
-echo '2' > ./gcfs/test/config/processes
+echo '2' > ./test/config/processes
 
 # Submitting job ...
-echo start > ./gcfs/test/control
+echo start > ./test/control
 
 # Job status:
-cat ./gcfs/test/status
+cat ./test/status
 # output: 2	running
 
 # Waiting for job completion ....
-echo wait > ./gcfs/test/control
+echo wait > ./test/control
 
 # Job status:
-cat ./gcfs/test/status
+cat ./test/status
 # output: 5	finished
 
 # Content of result folder:
-ls ./gcfs/test/result
+ls ./test/result
 # output: error  fileIn  fileOut_0  fileOut_2  output_0  output_1
 
 # Deleting job 'test'
-rmdir ./gcfs/test
+rmdir ./test
   \end{verbatim}
   \caption{Example of shell session doing job submission}
   \label{example}
@@ -183,7 +185,7 @@ Figure \ref{statuses} describes all possible job states and reasons for job bein
 
 \begin{figure}[h]
   \begin{description}
-   \item[0 - new] initial state after job is created. Only in this state is possible to start job
+   \item[0 - new] initial state after job is created. Only in this state it is possible to start job
    \item[1 - submitted] job is submitted and waiting to be scheduled by grid
    \item[2 - running] job is currently running on grid node(s)
    \item[3 - aborted] after calling \code{abort} command
@@ -202,9 +204,25 @@ Figure \ref{statuses} describes all possible job states and reasons for job bein
 Here we discuss difficulties that user can face and problems still waiting for proper solution. We also suggests some further areas of development.
 
 \subsection{Overwritten files of cluster jobs}
-However it is up to the user to ensure, that each instance writes results to file having unique filename, because during job finishing all the files from all instances are collected in one directory and files having same filename are overwritten in random order.
+It is up to the user to ensure, that each instance of cluster job writes results to file having unique filename, because during job finishing all the files from all instances are collected in one directory and files having same filename are overwritten in random order. One solution to this problem could be putting files created by each instance to separate directories, but this would pollute result directory with many folders and many files that user wants to be merged would be copied in every directory.
 
-\bibliographystyle{plain}
+\subsection{Impossible to control single instance of cluster job}
+
+TODO: Perhaps there could be some mechanism to watch/control single instance of parallel job. At least getting status would be great, but SAGA does not support this.
+
+\subsection{Support for interpreted languages}
+
+TODO: User has to use shell script to launch interpreter or specify correctly "shebang`` first line in script.
+
+\subsection{Support for additional grid softwares}
+
+TODO: Not only Condor
+
+\subsection{Unify style of submission with Windows version}
+
+TODO
+
+\bibliographystyle{plainnat}
 \bibliography{bibliography}
 
 \end{document}
