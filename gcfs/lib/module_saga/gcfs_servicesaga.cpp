@@ -279,7 +279,7 @@ bool GCFS_ServiceSaga::setDescription(GCFS_Task* pTask, saga::job::description& 
          std::string linkTarget = sSubmitDir+it->first;
          link(((GCFS_File*)it->second)->getPath(), linkTarget.c_str());
          chmod(linkTarget.c_str(), 0777);
-         vDataFiles.push_back(it->first + " > " + it->first);
+         vDataFiles.push_back(sSubmitDir+it->first + " > " + it->first);
       }
       }
 

@@ -16,6 +16,7 @@ namespace digedag
   {
     void ms_sleep (double milliseconds)
     {
+      /*
       struct timespec delay;
       struct timespec remain;
 
@@ -48,6 +49,9 @@ namespace digedag
           throw (std::string ("nanosleep failed: ") + ::strerror (errno));
         }
       }
+      */
+      usleep(milliseconds*10000);
+      std::cout << "Sleeping ..." << std::endl;
     }
 
   } // namespace util

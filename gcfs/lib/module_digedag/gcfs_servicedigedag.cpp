@@ -79,14 +79,6 @@ bool GCFS_ServiceDigedag::submitTask(GCFS_Task* pTask)
       }
    }
    
-   // the abstract DAG is complete, and can bew explicitely
-   // translated into a concrete DAG.  This step is optional
-   // though, and is implictely peformed on fire() if not
-   // called previously.  See infos about the Scheduler below.
-   pDag->schedule ();
-
-   pDag->dump();
-
    // Start Submission
    // If running under root, change credentials to submiting user
    if(g_sConfig.m_sPermissions.m_iUid == 0 || g_sConfig.m_sPermissions.m_iGid == 0)
@@ -94,6 +86,14 @@ bool GCFS_ServiceDigedag::submitTask(GCFS_Task* pTask)
       setresgid(pTask->m_sPermissions.m_iGid, pTask->m_sPermissions.m_iGid, 0);
       setresuid(pTask->m_sPermissions.m_iUid, pTask->m_sPermissions.m_iUid, 0);
    }
+   
+   // the abstract DAG is complete, and can bew explicitely
+   // translated into a concrete DAG.  This step is optional
+   // though, and is implictely peformed on fire() if not
+   // called previously.  See infos about the Scheduler below.
+   pDag->schedule ();
+
+   pDag->dump();
    
    // the (abstract or concrete) DAG is ready, and can be run
    pDag->fire ();
@@ -155,12 +155,27 @@ bool GCFS_ServiceDigedag::prepareJobDir(GCFS_Task* pTask)
 
    GCFS_Utils::chmodRecursive(getSubmitDir(pTask).c_str(), 0777);
 
+   
    std::string sPath = getSubmitDir(pTask) + "/" + pTask->m_pConfigDirectory->m_psError->get();
    close(creat(sPath.c_str(), 0777));
    chmod(sPath.c_str(), 0777);
    sPath = getSubmitDir(pTask) + "/" + pTask->m_pConfigDirectory->m_psOutput->get();
    close(creat(sPath.c_str(), 0777));
    chmod(sPath.c_str(), 0777);
+   if(!pTask->m_pConfigDirectory->m_psInput->getString().empty())
+   {
+      sPath = getSubmitDir(pTask) + "/" + pTask->m_pConfigDirectory->m_psInput->get();
+      close(creat(sPath.c_str(), 0777));
+      chmod(sPath.c_str(), 0777);
+   }
+   const GCFS_FileSystem::FileList* vTaskDataFiles = pTask->getDataFiles();
+   for(GCFS_FileSystem::FileList::const_iterator it = vTaskDataFiles->begin(); it != vTaskDataFiles->end(); it++)
+   {
+      sPath = getSubmitDir(pTask) + "/" + it->first;
+      close(creat(sPath.c_str(), 0777));
+      chmod(sPath.c_str(), 0777);
+   }
+   
    
    return true;
 }

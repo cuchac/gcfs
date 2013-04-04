@@ -49,6 +49,10 @@ ssize_t GCFS_ConfigValue::write(const char* sBuffer, off_t uiOffset, size_t uiSi
 
    std::string sValue = GCFS_Utils::TrimStr(uiSize > 0 ? std::string(sBuffer, uiSize) : std::string(sBuffer));
    
+   // Do not set value if "nothing" is appended
+   if(sValue.empty() && uiOffset > 0)
+      return false;
+   
    if(!SetValue(sValue.c_str(), uiOffset))
       return 0;
 
